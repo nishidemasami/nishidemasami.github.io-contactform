@@ -1,0 +1,223 @@
+name: Documentation Deployment CI/CD
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - '.github/workflows/document_cicd.yaml'
+      - "testpage/**"
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - '.github/workflows/document_cicd.yaml'
+      - "testpage/**"
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-northeast-3
+
+jobs:
+  generate-api-docs:
+    name: Generate API Lambda Documentation
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+    # Note: You need to configure the workflow permissions to allow GitHub Actions to create Deployments. This can be done in the repository settings under Actions > General > Workflow permissions.
+    permissions:      
+      contents: write
+      pull-requests: write
+      repository-projects: write
+      deployments: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Setup Rust
+      #   uses: dtolnay/rust-toolchain@stable
+
+      # - name: Cache Rust dependencies
+      #   uses: Swatinem/rust-cache@v2
+      #   with:
+      #     workspaces: api/lambda
+      #     cache-on-failure: true
+
+      # - name: Generate API documentation
+      #   working-directory: api/lambda
+      #   run: cargo doc --no-deps
+
+      # - name: Copy documentation to _output
+      #   run: |
+      #     mkdir -p _output/raw/api
+      #     cp -r api/lambda/target/doc/* _output/raw/api/
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: testpage/package-lock.json
+
+      - name: Install testpage dependencies
+        working-directory: testpage
+        run: npm ci
+
+      - name: Install TypeDoc
+        working-directory: testpage
+        run: npm install --save-dev typedoc
+
+      - name: Generate testpage documentation
+        working-directory: testpage
+        run: npx typedoc --out ../_output/raw/testpage --entryPointStrategy expand app components
+
+      - name: Build Storybook
+        working-directory: testpage
+        run: npm run build-storybook
+
+      - name: Copy Storybook to _output
+        run: |
+          mkdir -p _output/raw/storybook
+          cp -r testpage/storybook-static/* _output/raw/storybook/
+
+      # - name: Generate SwaggerUI
+      #   run: |
+      #     mkdir -p _output/raw/openapi
+      #     cp /api/openapi.yaml _output/raw/openapi/
+      #     npm install --prefix /tmp/swagger-ui-dist swagger-ui-dist@5.32.5
+      #     SWAGGER_DIST=/tmp/swagger-ui-dist/node_modules/swagger-ui-dist
+      #     cp -r "$SWAGGER_DIST"/* _output/raw/openapi/
+      #     sed -i 's|https://petstore.swagger.io/v2/swagger.json|./openapi.yaml|g' _output/raw/openapi/swagger-initializer.js
+
+      - name: Generate wiki pages
+        working-directory: docs
+        run: |
+          echo "## リンク" >> README.md
+          echo "- [テストページ](/testpage)" >> README.md
+          echo "- [テストページ ドキュメント（Storybook）](/raw/storybook)" >> README.md
+          echo "- [テストページ ドキュメント（TypeDoc）](/raw/testpage)" >> README.md
+          mkdir -p _book
+          chmod -R 777 _book
+          docker run --rm -v .:/honkit ghcr.io/nishidemasami/markdown-docs:v1.2.2 npx honkit build
+
+      - name: Copy documentation to _output
+        run: |
+          cp -r docs/_book/* _output/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install SAM CLI
+        run: |
+          pip install aws-sam-cli
+
+      - name: Get Cognito and API endpoint values
+        id: cognito
+        run: |
+          USER_POOL_ID=$(aws cloudformation list-exports \
+            --query "Exports[?Name=='nishidemasami-github-io-contactform-auth-${{ github.ref_name }}-CognitoUserPoolId'].Value" \
+            --output text)
+          echo "USER_POOL_ID=$USER_POOL_ID" >> $GITHUB_OUTPUT
+
+          CLIENT_ID=$(aws cloudformation list-exports \
+            --query "Exports[?Name=='nishidemasami-github-io-contactform-auth-${{ github.ref_name }}-CognitoUserPoolClientId'].Value" \
+            --output text)
+          echo "CLIENT_ID=$CLIENT_ID" >> $GITHUB_OUTPUT
+
+          API_ENDPOINT=$(aws cloudformation list-exports \
+            --query "Exports[?Name=='nishidemasami-github-io-contactform-api-${{ github.ref_name }}-HttpApiUrl'].Value" \
+            --output text)
+          echo "API_ENDPOINT=$API_ENDPOINT" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        working-directory: testpage
+        run: npm ci
+
+      - name: Build Next.js
+        working-directory: testpage
+        env:
+          NEXT_PUBLIC_USER_POOL_ID: ${{ steps.cognito.outputs.USER_POOL_ID }}
+          NEXT_PUBLIC_USER_POOL_CLIENT_ID: ${{ steps.cognito.outputs.CLIENT_ID }}
+          NEXT_PUBLIC_API_ENDPOINT: ${{ steps.cognito.outputs.API_ENDPOINT }}
+        run: npm run build
+
+      - name: Copy documentation to _output
+        run: |
+          mkdir -p _output/testpage
+          cp -r testpage/out/* _output/testpage/
+
+      - name: Create GitHub Deployment
+        id: create_deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const res = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'cloudflare-pages',
+              required_contexts: [],
+              auto_merge: false,
+              description: 'Deploy to Cloudflare Pages'
+            })
+            core.setOutput('deployment_id', res.data.id)
+
+
+      - name: Install Wrangler CLI
+        run: npm install wrangler --save-dev
+
+      - name: Deploy to Cloudflare Pages
+        id: pages_deploy
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNTID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_APITOKEN }}
+        run: |
+          npx wrangler pages deploy _output \
+            --project-name=${{ secrets.CLOUDFLARE_PROJECTNAME }} \
+            2>&1 | tee wrangler.log
+          
+      - name: Extract Pages URL
+        id: extract_url
+        run: |
+          URL=$(grep -oE 'https://[a-z0-9-]+\.${{ secrets.CLOUDFLARE_PROJECTNAME }}\.pages\.dev' wrangler.log | head -n1)
+          echo "pages_url=$URL" >> "$GITHUB_OUTPUT"
+
+      # Note: You need to configure the workflow permissions to allow GitHub Actions to create Deployments. This can be done in the repository settings under Actions > General > Workflow permissions.
+      # Workflow permissions
+      # ✔Read and write permissions
+      - name: Output CloudFlare Pages URL
+        run: |
+          echo "Document URL: ${{ steps.extract_url.outputs.pages_url }}"
+      - name: Create GitHub Deployment
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.create_deployment.outputs.deployment_id }},
+              state: 'success',
+              environment_url: '${{ steps.extract_url.outputs.pages_url }}'
+            })
+      - name: Mark deployment failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.create_deployment.outputs.deployment_id }},
+              state: 'failure'
+            })
