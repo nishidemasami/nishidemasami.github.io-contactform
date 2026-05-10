@@ -47,8 +47,16 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error
     // JWTクレームからメールアドレスを抽出する
     let auth_info = event.request_context.authorizer.as_ref().and_then(|auth| {
         let email = auth.jwt.claims.email.as_str();
-        let cognito_sub = uuid::Uuid::parse_str(&auth.jwt.claims.cognito_sub).ok()?;
-        (!email.is_empty()).then_some((email, cognito_sub))
+        if email.is_empty() {
+            return None;
+        }
+        match uuid::Uuid::parse_str(&auth.jwt.claims.cognito_sub) {
+            Ok(cognito_sub) => Some((email, cognito_sub)),
+            Err(err) => {
+                tracing::warn!("Invalid cognito_sub in JWT claims: {}", err);
+                None
+            }
+        }
     });
 
     let (email, cognito_sub) = match auth_info {
