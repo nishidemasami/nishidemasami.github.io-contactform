@@ -85,7 +85,6 @@ Resources:
       BuildProperties:
         Binary: api_handler
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-inquiry-db-function-${Stage}
       Runtime: provided.al2023
       Handler: bootstrap
       CodeUri: ./lambda
