@@ -27,10 +27,10 @@ Outputs:
     Description: 'Aurora DSQL Cluster Identifier'
     Value: !Ref DSQLCluster
     Export:
-      Name: !Sub ${StackNamePrefix}-app-db-${Stage}-DSQLClusterIdentifier
+      Name: !Sub ${StackNamePrefix}-db-${Stage}-DSQLClusterIdentifier
   
   DSQLClusterEndpoint:
     Description: 'Aurora DSQL Cluster Endpoint'
     Value: !GetAtt DSQLCluster.Endpoint
     Export:
-      Name: !Sub ${StackNamePrefix}-app-db-${Stage}-DSQLClusterEndpoint
+      Name: !Sub ${StackNamePrefix}-db-${Stage}-DSQLClusterEndpoint
