@@ -95,9 +95,9 @@ jobs:
         run: |
           echo "" >> README.md
           echo "## リンク" >> README.md
-          echo '- [テストページ](/testpage){:target="_blank"}' >> README.md
-          echo '- [テストページ ドキュメント（Storybook）](/raw/storybook){:target="_blank"}' >> README.md
-          echo '- [テストページ ドキュメント（TypeDoc）](/raw/testpage){:target="_blank"}' >> README.md
+          echo '- <a href="/testpage" target="_blank">テストページ</a>' >> README.md
+          echo '- <a href="/raw/storybook" target="_blank">テストページ ドキュメント（Storybook）</a>' >> README.md
+          echo '- <a href="/raw/testpage" target="_blank">テストページ ドキュメント（TypeDoc）</a>' >> README.md
           mkdir -p _book
           chmod -R 777 _book
           docker run --rm -v .:/honkit ghcr.io/nishidemasami/markdown-docs:v1.2.2 npx honkit build
