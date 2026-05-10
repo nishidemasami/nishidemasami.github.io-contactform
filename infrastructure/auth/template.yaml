@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SAM template for Cognito User Pool setup
+
+Parameters:
+  Stage:
+    Type: String
+    Default: develop
+    AllowedValues:
+      - develop
+      - main
+  StackNamePrefix:
+    Type: String
+    Default: nishidemasami-github-io-contactform
+    AllowedValues:
+      - nishidemasami-github-io-contactform
+
+Resources:
+  # Cognito User Pool
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "${StackNamePrefix}-user-pool-${Stage}"
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub "${StackNamePrefix}-app-client-${Stage}"
+      UserPoolId: !Ref CognitoUserPool
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      GenerateSecret: false
+      PreventUserExistenceErrors: ENABLED
+
+Outputs:
+  CognitoUserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref CognitoUserPool
+    Export:
+      Name: !Sub ${StackNamePrefix}-app-auth-${Stage}-CognitoUserPoolId
+
+  CognitoUserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref CognitoUserPoolClient
+    Export:
+      Name: !Sub ${StackNamePrefix}-app-auth-${Stage}-CognitoUserPoolClientId
+
+  CognitoIssuer:
+    Description: Cognito JWT Issuer URL
+    Value: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+    Export:
+      Name: !Sub ${StackNamePrefix}-app-auth-${Stage}-CognitoIssuer
