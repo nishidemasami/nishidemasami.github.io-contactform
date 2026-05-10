@@ -1,0 +1,217 @@
+name: DB Migrate - DSQL Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - '.github/workflows/db_migrate.yaml'
+      - "infrastructure/liquibase_migrate/**"
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - '.github/workflows/db_migrate.yaml'
+      - "infrastructure/liquibase_migrate/**"
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-northeast-3
+  SAM_TEMPLATE: infrastructure/liquibase_migrate/template.yaml
+
+jobs:
+  validate:
+    name: Validate SAM Template
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install SAM CLI
+        run: |
+          pip install aws-sam-cli
+
+      - name: Validate SAM template
+        run: |
+          sam validate --template ${{ env.SAM_TEMPLATE }} --lint
+
+  deploy:
+    name: Deploy DSQL Cluster
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+    needs: validate
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install SAM CLI
+        run: |
+          pip install aws-sam-cli
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy DSQL cluster
+        id: deploy
+        run: |
+          sam deploy \
+            --template ${{ env.SAM_TEMPLATE }} \
+            --stack-name nishidemasami-github-io-contactform-db-${{ github.ref_name }} \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides Stage=${{ github.ref_name }} \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --resolve-s3
+
+      - name: Get DSQL cluster endpoint
+        id: endpoint
+        run: |
+          ENDPOINT=$(aws cloudformation describe-stacks \
+            --stack-name nishidemasami-github-io-contactform-db-${{ github.ref_name }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`DSQLClusterEndpoint`].OutputValue' \
+            --output text)
+          echo "DSQL_ENDPOINT=$ENDPOINT" >> $GITHUB_OUTPUT
+          echo "DSQL Cluster Endpoint: $ENDPOINT"
+
+  migrate:
+    name: Run Liquibase Migrations
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+    needs: deploy
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install SAM CLI
+        run: |
+          pip install aws-sam-cli
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install Liquibase
+        uses: liquibase/setup-liquibase@v2
+        with:
+          version: '4.33.0'
+          edition: 'oss'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run Liquibase
+        run: |
+          liquibase update \
+            --changelog-file=infrastructure/liquibase_migrate/changelog.xml \
+            --url=jdbc:postgresql://$(aws cloudformation describe-stacks \
+              --stack-name nishidemasami-github-io-contactform-db-${{ github.ref_name }} \
+              --query "Stacks[0].Outputs[?OutputKey=='DSQLClusterEndpoint'].OutputValue" \
+              --output text):5432/postgres \
+            --username=admin \
+            --password="$(aws dsql generate-db-connect-admin-auth-token --region ap-northeast-3  --expires-in 3600  --hostname $(aws cloudformation describe-stacks --stack-name nishidemasami-github-io-contactform-db-${{ github.ref_name }}  --query "Stacks[0].Outputs[?OutputKey=='DSQLClusterEndpoint'].OutputValue"  --output text))"
+
+  generate:
+    name: Generate SeaORM Entity Structs
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+    needs: migrate
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get DSQL cluster endpoint
+        id: endpoint
+        run: |
+          ENDPOINT=$(aws cloudformation describe-stacks \
+            --stack-name nishidemasami-github-io-contactform-db-${{ github.ref_name }} \
+            --query "Stacks[0].Outputs[?OutputKey=='DSQLClusterEndpoint'].OutputValue" \
+            --output text)
+          echo "DSQL_ENDPOINT=$ENDPOINT" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Install sea-orm-cli
+        run: cargo install sea-orm-cli --locked
+
+      - name: Generate SeaORM entity structs
+        run: |
+          TOKEN=$(aws dsql generate-db-connect-admin-auth-token \
+            --region "${{ env.AWS_REGION }}" \
+            --expires-in 3600 \
+            --hostname "${{ steps.endpoint.outputs.DSQL_ENDPOINT }}")
+          echo "::add-mask::$TOKEN"
+          ENCODED_TOKEN=$(printf '%s' "$TOKEN" | jq -rR @uri)
+          DATABASE_URL="postgres://admin:${ENCODED_TOKEN}@${{ steps.endpoint.outputs.DSQL_ENDPOINT }}:5432/postgres?sslmode=require"
+          sea-orm-cli generate entity \
+            -u "$DATABASE_URL" \
+            -o infrastructure/sea_orm/src/entity \
+            --ignore-tables databasechangelog \
+            --ignore-tables databasechangeloglock
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet infrastructure/sea_orm/src/entity \
+            || echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Commit generated entity structs
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add infrastructure/sea_orm/src/entity
+          git commit -m "chore: auto-generate SeaORM entity structs from SQL schema [skip ci]"
+          git push

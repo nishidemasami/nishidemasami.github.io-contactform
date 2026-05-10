@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SAM template for Aurora DSQL cluster setup
+
+Parameters:
+  Stage:
+    Type: String
+    Default: develop
+    AllowedValues:
+      - develop
+      - main
+  StackNamePrefix:
+    Type: String
+    Default: nishidemasami-github-io-contactform
+    AllowedValues:
+      - nishidemasami-github-io-contactform
+
+Resources:
+  # Aurora DSQL Cluster
+  DSQLCluster:
+    Type: AWS::DSQL::Cluster
+    Properties:
+      DeletionProtectionEnabled: false
+
+Outputs:
+  DSQLClusterIdentifier:
+    Description: 'Aurora DSQL Cluster Identifier'
+    Value: !Ref DSQLCluster
+    Export:
+      Name: !Sub ${StackNamePrefix}-app-db-${Stage}-DSQLClusterIdentifier
+  
+  DSQLClusterEndpoint:
+    Description: 'Aurora DSQL Cluster Endpoint'
+    Value: !GetAtt DSQLCluster.Endpoint
+    Export:
+      Name: !Sub ${StackNamePrefix}-app-db-${Stage}-DSQLClusterEndpoint
