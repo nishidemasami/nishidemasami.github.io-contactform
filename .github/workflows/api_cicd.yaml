@@ -164,13 +164,13 @@ jobs:
             --output-type YAML \
             --specification OAS30 \
             --stage-name '$default' \
-            /api/openapi.yaml
+            api/openapi.yaml
 
       - name: Check for changes
         id: changes
         run: |
-          git add /api/openapi.yaml
-          git diff --cached --quiet /api/openapi.yaml \
+          git add api/openapi.yaml
+          git diff --cached --quiet api/openapi.yaml \
             || echo "changed=true" >> "$GITHUB_OUTPUT"
 
       - name: Commit OpenAPI definition

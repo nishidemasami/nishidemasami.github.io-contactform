@@ -50,7 +50,7 @@ Resources:
   HttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
-      Name: !Sub ${AWS::StackName}-http-api
+      Name: !Sub ${AWS::StackName}-http-api-${Stage}
       CorsConfiguration:
 
         AllowOrigins: 
@@ -85,7 +85,7 @@ Resources:
       BuildProperties:
         Binary: api_handler
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-inquiry-db-function
+      FunctionName: !Sub ${AWS::StackName}-inquiry-db-function-${Stage}
       Runtime: provided.al2023
       Handler: bootstrap
       CodeUri: ./lambda
