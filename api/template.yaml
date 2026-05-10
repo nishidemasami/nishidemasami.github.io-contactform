@@ -56,7 +56,8 @@ Resources:
       Name: !Sub ${AWS::StackName}-http-api
       CorsConfiguration:
 
-        AllowOrigin: !FindInMap [StageCorsMap, !Ref Stage, AllowOrigin]
+        AllowOrigins: 
+          - !FindInMap [StageCorsMap, !Ref Stage, AllowOrigin]
 
         AllowMethods:
           - GET
