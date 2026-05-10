@@ -136,7 +136,7 @@ jobs:
           echo "CLIENT_ID=$CLIENT_ID" >> $GITHUB_OUTPUT
 
           API_ENDPOINT=$(aws cloudformation list-exports \
-            --query "Exports[?Name=='nishidemasami-github-io-contactform-api-${{ github.ref_name }}-HttpApiUrl'].Value" \
+            --query "Exports[?Name=='nishidemasami-github-io-contactform-api-${{ github.ref_name }}-HttpApiUrl-${{ github.ref_name }}'].Value" \
             --output text)
           echo "API_ENDPOINT=$API_ENDPOINT" >> $GITHUB_OUTPUT
 

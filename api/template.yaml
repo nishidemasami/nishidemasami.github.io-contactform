@@ -123,10 +123,10 @@ Outputs:
     Description: HTTP API Gateway URL
     Value: !Sub https://${HttpApi}.execute-api.ap-northeast-3.amazonaws.com
     Export:
-      Name: !Sub ${AWS::StackName}-HttpApiUrl
+      Name: !Sub ${AWS::StackName}-HttpApiUrl-${Stage}
 
   HttpApiId:
     Description: HTTP API Gateway ID
     Value: !Ref HttpApi
     Export:
-      Name: !Sub ${AWS::StackName}-HttpApiId
+      Name: !Sub ${AWS::StackName}-HttpApiId-${Stage}
