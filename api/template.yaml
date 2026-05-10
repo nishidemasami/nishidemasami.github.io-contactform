@@ -15,9 +15,6 @@ Parameters:
     AllowedValues:
       - nishidemasami-github-io-contactform
 
-Conditions:
-  IsMainStage: !Equals [ !Ref Stage, main ]
-
 Mappings:
   StageCorsMap:
     develop:
