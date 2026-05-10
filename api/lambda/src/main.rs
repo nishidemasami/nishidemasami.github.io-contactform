@@ -51,6 +51,9 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error
             return None;
         }
         let cognito_sub = auth.jwt.claims.cognito_sub.as_deref()?;
+        if cognito_sub.is_empty() {
+            return None;
+        }
         match uuid::Uuid::parse_str(cognito_sub) {
             Ok(cognito_sub) => Some((email, cognito_sub)),
             Err(err) => {
@@ -76,7 +79,7 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error
     let db = create_db("selectview", &dsql_endpoint, &dsql_region).await?;
 
     let result = match event.request_context.http.method.as_str() {
-        "GET" => handle_get_inquiries(&db, email, &cors_origin).await,
+        "GET" => handle_get_inquiries(&db, email, cognito_sub, &cors_origin).await,
         "POST" => {
             let body = event.body.as_deref().unwrap_or("");
             handle_post_inquiry(&db, email, cognito_sub, body, &cors_origin).await

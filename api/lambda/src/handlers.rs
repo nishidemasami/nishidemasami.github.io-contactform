@@ -8,14 +8,15 @@ use sea_orm_entities::entity::inquiries;
 pub(crate) async fn handle_get_inquiries(
     db: &DatabaseConnection,
     email: &str,
+    cognito_sub: uuid::Uuid,
     cors_origin: &str,
 ) -> Result<Response, Error> {
     tracing::info!("Querying inquiries for email: {}", email);
 
     let inquiries: Vec<Inquiry> = Inquiry::find_by_statement(Statement::from_sql_and_values(
         DbBackend::Postgres,
-        "SELECT id, cognito_sub, email, subject, body, created_at FROM inquiries WHERE email = $1 ORDER BY created_at DESC",
-        [email.to_owned().into()],
+        "SELECT id, cognito_sub, email, subject, body, created_at FROM inquiries WHERE email = $1 AND cognito_sub = $2 ORDER BY created_at DESC",
+        [email.to_owned().into(), cognito_sub.into()],
     ))
     .all(db)
     .await
