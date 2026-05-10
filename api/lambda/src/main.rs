@@ -28,7 +28,7 @@ static CORS_ORIGIN: LazyLock<String> = LazyLock::new(|| {
 ///
 /// # Authentication
 /// すべてのリクエストには、Amazon CognitoからのJWT IDトークンが必要です。
-/// トークンにはユーザーを識別するために使用される`email`クレームが含まれている必要があります。
+/// トークンにはユーザーを識別するために使用される`email`クレームと`sub`クレームが含まれている必要があります。
 async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error> {
     let (event, _context) = event.into_parts();
 
@@ -46,11 +46,12 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error
 
     // JWTクレームからメールアドレスを抽出する
     let auth_info = event.request_context.authorizer.as_ref().and_then(|auth| {
-        let email = auth.jwt.claims.email.as_str();
+        let email = auth.jwt.claims.email.as_deref()?;
         if email.is_empty() {
             return None;
         }
-        match uuid::Uuid::parse_str(&auth.jwt.claims.cognito_sub) {
+        let cognito_sub = auth.jwt.claims.cognito_sub.as_deref()?;
+        match uuid::Uuid::parse_str(cognito_sub) {
             Ok(cognito_sub) => Some((email, cognito_sub)),
             Err(err) => {
                 tracing::warn!("Invalid cognito_sub in JWT claims: {}", err);
@@ -65,7 +66,7 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error
             return Ok(Response::error(
                 401,
                 "Unauthorized",
-                "Invalid or missing JWT token",
+                "Invalid or missing required JWT claims (email and sub)",
                 &cors_origin,
             ));
         }

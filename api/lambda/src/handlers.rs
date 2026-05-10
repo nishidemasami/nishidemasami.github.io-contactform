@@ -14,7 +14,7 @@ pub(crate) async fn handle_get_inquiries(
 
     let inquiries: Vec<Inquiry> = Inquiry::find_by_statement(Statement::from_sql_and_values(
         DbBackend::Postgres,
-        "SELECT id, cognito_sub, email, subject, body, created_at FROM get_inquiries_by_email($1) ORDER BY created_at DESC",
+        "SELECT id, cognito_sub, email, subject, body, created_at FROM inquiries WHERE email = $1 ORDER BY created_at DESC",
         [email.to_owned().into()],
     ))
     .all(db)

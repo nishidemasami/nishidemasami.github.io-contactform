@@ -34,9 +34,9 @@ pub(crate) struct Jwt {
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct Claims {
-    pub(crate) email: String,
+    pub(crate) email: Option<String>,
     #[serde(rename = "sub")]
-    pub(crate) cognito_sub: String,
+    pub(crate) cognito_sub: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -181,6 +181,14 @@ mod tests {
         let req: CreateInquiryRequest = serde_json::from_str(json).unwrap();
         assert_eq!(req.subject, "Hello");
         assert_eq!(req.body, "World");
+    }
+
+    #[test]
+    fn test_claims_deserialization_with_missing_sub() {
+        let json = r#"{"email":"test@example.com"}"#;
+        let claims: Claims = serde_json::from_str(json).unwrap();
+        assert_eq!(claims.email.as_deref(), Some("test@example.com"));
+        assert_eq!(claims.cognito_sub, None);
     }
 }
 
