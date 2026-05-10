@@ -35,6 +35,8 @@ pub(crate) struct Jwt {
 #[derive(Debug, Deserialize)]
 pub(crate) struct Claims {
     pub(crate) email: String,
+    #[serde(rename = "sub")]
+    pub(crate) cognito_sub: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -257,8 +259,9 @@ mod prop_tests {
             body in "[A-Za-z0-9 ]{1,200}",
         ) {
             let id = uuid::Uuid::now_v7();
+            let cognito_sub = uuid::Uuid::now_v7();
             let now = chrono::Utc::now().fixed_offset();
-            let inquiry = Inquiry { id, email: email.clone(), subject: subject.clone(), body: body.clone(), created_at: now };
+            let inquiry = Inquiry { id, cognito_sub, email: email.clone(), subject: subject.clone(), body: body.clone(), created_at: now };
             let json = serde_json::to_value(&inquiry).unwrap();
             prop_assert_eq!(json["email"].as_str(), Some(email.as_str()));
             prop_assert_eq!(json["subject"].as_str(), Some(subject.as_str()));

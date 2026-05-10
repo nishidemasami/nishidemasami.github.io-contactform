@@ -49,7 +49,8 @@ mod prop_tests {
         ) {
             let role = "selectview";
             let result = build_connection_string(role, &endpoint, &region);
-            prop_assert!(result.starts_with(&format!("postgres://{}@", role)));
+            let role_prefix = format!("postgres://{role}@");
+            prop_assert!(result.starts_with(&role_prefix));
             prop_assert!(result.contains(&endpoint));
             let region_param = format!("region={}", region);
             prop_assert!(result.contains(&region_param));
@@ -64,7 +65,8 @@ mod prop_tests {
         ) {
             let role = "selectview";
             let result = build_connection_string(role, &endpoint, &region);
-            prop_assert!(result.starts_with(&format!("postgres://{}@", role)));
+            let role_prefix = format!("postgres://{role}@");
+            prop_assert!(result.starts_with(&role_prefix));
         }
     }
 }

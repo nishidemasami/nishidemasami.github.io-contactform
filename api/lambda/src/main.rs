@@ -1,6 +1,6 @@
 //! # バックエンドAPIデータベース Lambda ハンドラー
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
-use std::env;
+use std::{env, sync::LazyLock};
 
 mod db;
 mod handlers;
@@ -10,7 +10,7 @@ use db::create_db;
 use handlers::{handle_get_inquiries, handle_post_inquiry};
 use models::{Request, Response};
 
-static CORS_ORIGIN: Lazy<String> = Lazy::new(|| {
+static CORS_ORIGIN: LazyLock<String> = LazyLock::new(|| {
     env::var("CORS_ORIGIN").unwrap_or_else(|_| "https://nishidemasami-github-io-contactform-test.pages.dev".to_string())
 });
 
@@ -45,17 +45,14 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error
     })?;
 
     // JWTクレームからメールアドレスを抽出する
-    let email = event.request_context.authorizer.as_ref().and_then(|auth| {
+    let auth_info = event.request_context.authorizer.as_ref().and_then(|auth| {
         let email = auth.jwt.claims.email.as_str();
-        if email.is_empty() {
-            None
-        } else {
-            Some(email)
-        }
+        let cognito_sub = uuid::Uuid::parse_str(&auth.jwt.claims.cognito_sub).ok()?;
+        (!email.is_empty()).then_some((email, cognito_sub))
     });
 
-    let email = match email {
-        Some(email) => email,
+    let (email, cognito_sub) = match auth_info {
+        Some(auth_info) => auth_info,
         None => {
             return Ok(Response::error(
                 401,
@@ -73,7 +70,7 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error
         "GET" => handle_get_inquiries(&db, email, &cors_origin).await,
         "POST" => {
             let body = event.body.as_deref().unwrap_or("");
-            handle_post_inquiry(&db, email, body, &cors_origin).await
+            handle_post_inquiry(&db, email, cognito_sub, body, &cors_origin).await
         }
         _ => Ok(Response::error(
             405,
