@@ -38,7 +38,6 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-            Policies:
         - PolicyName: !Sub AllowDsqlDbConnect-${Stage}
           PolicyDocument:
             Version: '2012-10-17'
