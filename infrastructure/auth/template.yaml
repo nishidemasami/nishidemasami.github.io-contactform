@@ -49,16 +49,16 @@ Outputs:
     Description: Cognito User Pool ID
     Value: !Ref CognitoUserPool
     Export:
-      Name: !Sub ${StackNamePrefix}-app-auth-${Stage}-CognitoUserPoolId
+      Name: !Sub ${StackNamePrefix}-auth-${Stage}-CognitoUserPoolId
 
   CognitoUserPoolClientId:
     Description: Cognito User Pool Client ID
     Value: !Ref CognitoUserPoolClient
     Export:
-      Name: !Sub ${StackNamePrefix}-app-auth-${Stage}-CognitoUserPoolClientId
+      Name: !Sub ${StackNamePrefix}-auth-${Stage}-CognitoUserPoolClientId
 
   CognitoIssuer:
     Description: Cognito JWT Issuer URL
     Value: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
     Export:
-      Name: !Sub ${StackNamePrefix}-app-auth-${Stage}-CognitoIssuer
+      Name: !Sub ${StackNamePrefix}-auth-${Stage}-CognitoIssuer

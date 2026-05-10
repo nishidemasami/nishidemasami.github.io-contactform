@@ -1,0 +1,182 @@
+name: CI/CD - API Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - '.github/workflows/api_cicd.yaml'
+      - 'api/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - '.github/workflows/api_cicd.yaml'
+      - 'api/**'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-northeast-3
+  SAM_TEMPLATE: api/template.yaml
+
+jobs:
+  validate:
+    name: Validate and Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install SAM CLI
+        run: |
+          pip install aws-sam-cli
+
+      - name: Validate SAM template
+        run: |
+          sam validate --template ${{ env.SAM_TEMPLATE }} --lint
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: api/lambda
+          cache-on-failure: true
+
+      - name: Check Rust code
+        working-directory: api/lambda
+        run: cargo check
+
+      - name: Run Rust tests
+        working-directory: api/lambda
+        run: cargo test
+
+  deploy:
+    name: Deploy API
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+    needs: validate
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install SAM CLI
+        run: |
+          pip install aws-sam-cli
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-gnu
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: api/lambda
+          cache-on-failure: true
+
+      - name: Install cargo-lambda
+        run: |
+          pip install cargo-lambda
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build Lambda function
+        run: |
+          sam build --template ${{ env.SAM_TEMPLATE }}
+
+      - name: Deploy API resources
+        id: deploy
+        run: |
+          sam deploy \
+            --template .aws-sam/build/template.yaml \
+            --stack-name nishidemasami-github-io-contactform-api-${{ github.ref_name }} \
+            --capabilities CAPABILITY_IAM \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides Stage=${{ github.ref_name }}  \
+              StackNamePrefix=nishidemasami-github-io-contactform \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --resolve-s3
+
+  export_openapi:
+    name: Export OpenAPI Definition
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+    needs: deploy
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get API ID from CloudFormation
+        id: api_outputs
+        run: |
+          API_ID=$(aws cloudformation describe-stacks \
+            --stack-name nishidemasami-github-io-contactform-api-${{ github.ref_name }} \
+            --query "Stacks[0].Outputs[?OutputKey=='HttpApiId'].OutputValue" \
+            --output text)
+          if [ -z "$API_ID" ] || [ "$API_ID" = "None" ]; then
+            echo "Error: CloudFormation output 'HttpApiId' is missing or not available for stack nishidemasami-github-io-contactform-api-${{ github.ref_name }}." >&2
+            exit 1
+          fi
+          echo "API_ID=$API_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Export OpenAPI definition
+        run: |
+          aws apigatewayv2 export-api \
+            --api-id ${{ steps.api_outputs.outputs.API_ID }} \
+            --output-type YAML \
+            --specification OAS30 \
+            --stage-name '$default' \
+            /api/openapi.yaml
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add /api/openapi.yaml
+          git diff --cached --quiet /api/openapi.yaml \
+            || echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Commit OpenAPI definition
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -m "chore: auto-generate OpenAPI definition from API Gateway [skip ci]"
+          git push
