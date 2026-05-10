@@ -2,26 +2,26 @@
 
 ## 概要
 
-認証基盤は AWS SAM テンプレート `infrastructure/auth/template.yaml` で管理され、Amazon Cognito の **User Pool** と **User Pool Client** を環境ごとにデプロイします。
+認証基盤は `infrastructure/auth/template.yaml` の AWS SAM テンプレートで管理され、Amazon Cognito の **User Pool** と **User Pool Client** を `develop` / `main` 環境ごとにデプロイします。
 
-- ソース: [`../infrastructure/auth/template.yaml`](../infrastructure/auth/template.yaml)
+- テンプレート: [`../infrastructure/auth/template.yaml`](../infrastructure/auth/template.yaml)
 - 補足 README: [`../infrastructure/auth/README.md`](../infrastructure/auth/README.md)
-- デプロイ経路: [CI/CD](cicd.md)
+- デプロイ: [CI/CD](cicd.md)
 
 ## デプロイ対象
 
 | リソース | 役割 | 命名規則 |
 | --- | --- | --- |
 | `CognitoUserPool` | ユーザー管理本体 | `${StackNamePrefix}-user-pool-${Stage}` |
-| `CognitoUserPoolClient` | アプリケーションクライアント | `${StackNamePrefix}-app-client-${Stage}` |
+| `CognitoUserPoolClient` | API / フロントエンドが使うアプリクライアント | `${StackNamePrefix}-app-client-${Stage}` |
 
-## 設定内容
+`StackNamePrefix` の既定値は `nishidemasami-github-io-contactform`、`Stage` は `develop` または `main` です。
 
-### User Pool
+## User Pool 設定
 
 - メールアドレスを自動検証します。
-- ユーザー名属性としてメールアドレスを使用します。
-- パスワードポリシーは次の通りです。
+- ユーザー名属性としてメールアドレスを使います。
+- Hosted UI や外部 IdP の設定は、現在のテンプレートには含まれていません。
 
 | 項目 | 値 |
 | --- | --- |
@@ -31,26 +31,28 @@
 | 数字 | 必須 |
 | 記号 | 不要 |
 
-### User Pool Client
+## User Pool Client 設定
 
 - `ALLOW_USER_SRP_AUTH`
 - `ALLOW_REFRESH_TOKEN_AUTH`
-- クライアントシークレットは生成しません (`GenerateSecret: false`)。
-- 存在しないユーザーへの応答差分を抑制します (`PreventUserExistenceErrors: ENABLED`)。
+- `GenerateSecret: false`
+- `PreventUserExistenceErrors: ENABLED`
+
+現状のテンプレートでは、API Gateway JWT Authorizer から利用する前提のシンプルな App Client 構成になっています。
 
 ## CloudFormation Outputs
 
-| Output | 用途 |
-| --- | --- |
-| `CognitoUserPoolId` | User Pool ID の参照 |
-| `CognitoUserPoolClientId` | App Client ID の参照 |
-| `CognitoIssuer` | JWT 検証に使う Issuer URL |
+| Output | 用途 | API からの利用 |
+| --- | --- | --- |
+| `CognitoUserPoolId` | User Pool ID の参照 | フロントエンド設定や運用参照用 |
+| `CognitoUserPoolClientId` | App Client ID の参照 | API Gateway の JWT Audience |
+| `CognitoIssuer` | JWT Issuer URL | API Gateway の JWT Issuer |
 
-`CognitoIssuer` は API 側で JWT を検証する際の基準値になります。API 実装が追加されたら、[API](api.md) でこの Output の利用箇所を明記します。
+これらは `${StackNamePrefix}-auth-${Stage}-...` 形式で Export され、[API](api.md) の SAM テンプレートから `Fn::ImportValue` で参照されます。
 
-## ステージ
+## ブランチとステージ
 
-`Stage` パラメータは `develop` と `main` の 2 値です。GitHub Actions ではブランチ名をそのまま `Stage` に渡すため、ブランチ運用とデプロイ先が対応しています。
+`cognito_cicd.yaml` は `main` / `develop` ブランチの push・pull request・手動実行に対応しています。デプロイ時は `github.ref_name` をそのまま `Stage` に渡すため、ブランチ運用と Cognito 環境名が一致します。
 
 ## 関連ページ
 
