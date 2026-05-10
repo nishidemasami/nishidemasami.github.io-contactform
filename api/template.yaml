@@ -1,0 +1,134 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SAM template for API Gateway and Lambda setup
+
+Parameters:
+  Stage:
+    Type: String
+    Default: develop
+    AllowedValues:
+      - develop
+      - main
+  StackNamePrefix:
+    Type: String
+    Default: nishidemasami-github-io-contactform
+    AllowedValues:
+      - nishidemasami-github-io-contactform
+
+Conditions:
+  IsMainStage: !Equals [ !Ref Stage, main ]
+
+Mappings:
+  StageCorsMap:
+    develop:
+      AllowOrigin: "https://nishidemasami-github-io-contactform-test.pages.dev"
+    main:
+      AllowOrigin: "https://nishidemasami.github.io"
+
+Resources:
+  # Explicitly defined IAM Role for Lambda with a specific name
+  SelectFunctionLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: select-function-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: AllowDsqlDbConnect
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dsql:DbConnect
+                Resource: !Sub arn:aws:dsql:ap-northeast-3:${AWS::AccountId}:cluster/*
+  # HTTP API Gateway
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: !Sub ${AWS::StackName}-http-api
+      CorsConfiguration:
+
+        AllowOrigin: !FindInMap [StageCorsMap, !Ref Stage, AllowOrigin]
+
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowCredentials: false
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              Issuer:
+                Fn::ImportValue: !Sub ${StackNamePrefix}-auth-${Stage}-CognitoIssuer
+              Audience:
+                - Fn::ImportValue: !Sub ${StackNamePrefix}-auth-${Stage}-CognitoUserPoolClientId
+        DefaultAuthorizer: CognitoAuthorizer
+
+  # Lambda Function for DSQL operations
+  InquiryDbFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+      BuildProperties:
+        Binary: api_handler
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-inquiry-db-function
+      Runtime: provided.al2023
+      Handler: bootstrap
+      CodeUri: ./lambda
+      Architectures:
+        - arm64
+      MemorySize: 128
+      Timeout: 30
+      Environment:
+        Variables:
+          DSQL_ENDPOINT:
+            Fn::ImportValue: !Sub ${StackNamePrefix}-db-${Stage}-DSQLClusterEndpoint
+          DSQL_REGION: ap-northeast-3
+          CORS_ORIGIN: !FindInMap [StageCorsMap, !Ref Stage, AllowOrigin]
+      Role: !GetAtt SelectFunctionLambdaRole.Arn
+      Events:
+        GetInquiries:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /inquiries
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        PostInquiry:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /inquiries
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+Outputs:
+  HttpApiUrl:
+    Description: HTTP API Gateway URL
+    Value: !Sub https://${HttpApi}.execute-api.ap-northeast-3.amazonaws.com
+    Export:
+      Name: !Sub ${AWS::StackName}-HttpApiUrl
+
+  HttpApiId:
+    Description: HTTP API Gateway ID
+    Value: !Ref HttpApi
+    Export:
+      Name: !Sub ${AWS::StackName}-HttpApiId
