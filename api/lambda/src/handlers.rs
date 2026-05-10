@@ -8,14 +8,15 @@ use sea_orm_entities::entity::inquiries;
 pub(crate) async fn handle_get_inquiries(
     db: &DatabaseConnection,
     email: &str,
+    cognito_sub: uuid::Uuid,
     cors_origin: &str,
 ) -> Result<Response, Error> {
     tracing::info!("Querying inquiries for email: {}", email);
 
     let inquiries: Vec<Inquiry> = Inquiry::find_by_statement(Statement::from_sql_and_values(
         DbBackend::Postgres,
-        "SELECT id, email, subject, body, created_at FROM get_inquiries_by_email($1) ORDER BY created_at DESC",
-        [email.to_owned().into()],
+        "SELECT id, cognito_sub, email, subject, body, created_at FROM inquiries WHERE email = $1 AND cognito_sub = $2 ORDER BY created_at DESC",
+        [email.to_owned().into(), cognito_sub.into()],
     ))
     .all(db)
     .await
@@ -40,6 +41,7 @@ pub(crate) async fn handle_get_inquiries(
 pub(crate) async fn handle_post_inquiry(
     db: &DatabaseConnection,
     email: &str,
+    cognito_sub: uuid::Uuid,
     body: &str,
     cors_origin: &str,
 ) -> Result<Response, Error> {
@@ -55,6 +57,7 @@ pub(crate) async fn handle_post_inquiry(
 
     let new_inquiry = inquiries::ActiveModel {
         id: Set(id),
+        cognito_sub: Set(cognito_sub),
         email: Set(email.to_string()),
         subject: Set(create_request.subject.clone()),
         body: Set(create_request.body.clone()),
@@ -68,6 +71,7 @@ pub(crate) async fn handle_post_inquiry(
 
     let inquiry = Inquiry {
         id,
+        cognito_sub,
         email: email.to_string(),
         subject: create_request.subject,
         body: create_request.body,

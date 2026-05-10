@@ -1,6 +1,6 @@
 //! # バックエンドAPIデータベース Lambda ハンドラー
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
-use std::env;
+use std::{env, sync::LazyLock};
 
 mod db;
 mod handlers;
@@ -10,7 +10,7 @@ use db::create_db;
 use handlers::{handle_get_inquiries, handle_post_inquiry};
 use models::{Request, Response};
 
-static CORS_ORIGIN: Lazy<String> = Lazy::new(|| {
+static CORS_ORIGIN: LazyLock<String> = LazyLock::new(|| {
     env::var("CORS_ORIGIN").unwrap_or_else(|_| "https://nishidemasami-github-io-contactform-test.pages.dev".to_string())
 });
 
@@ -28,7 +28,7 @@ static CORS_ORIGIN: Lazy<String> = Lazy::new(|| {
 ///
 /// # Authentication
 /// すべてのリクエストには、Amazon CognitoからのJWT IDトークンが必要です。
-/// トークンにはユーザーを識別するために使用される`email`クレームが含まれている必要があります。
+/// トークンにはユーザーを識別するために使用される`email`クレームと`sub`クレームが含まれている必要があります。
 async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error> {
     let (event, _context) = event.into_parts();
 
@@ -45,22 +45,31 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error
     })?;
 
     // JWTクレームからメールアドレスを抽出する
-    let email = event.request_context.authorizer.as_ref().and_then(|auth| {
-        let email = auth.jwt.claims.email.as_str();
+    let auth_info = event.request_context.authorizer.as_ref().and_then(|auth| {
+        let email = auth.jwt.claims.email.as_deref()?;
         if email.is_empty() {
-            None
-        } else {
-            Some(email)
+            return None;
+        }
+        let cognito_sub = auth.jwt.claims.cognito_sub.as_deref()?;
+        if cognito_sub.is_empty() {
+            return None;
+        }
+        match uuid::Uuid::parse_str(cognito_sub) {
+            Ok(cognito_sub) => Some((email, cognito_sub)),
+            Err(err) => {
+                tracing::warn!("Invalid cognito_sub in JWT claims: {}", err);
+                None
+            }
         }
     });
 
-    let email = match email {
-        Some(email) => email,
+    let (email, cognito_sub) = match auth_info {
+        Some(auth_info) => auth_info,
         None => {
             return Ok(Response::error(
                 401,
                 "Unauthorized",
-                "Invalid or missing JWT token",
+                "Invalid or missing required JWT claims (email and sub)",
                 &cors_origin,
             ));
         }
@@ -70,10 +79,10 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error
     let db = create_db("selectview", &dsql_endpoint, &dsql_region).await?;
 
     let result = match event.request_context.http.method.as_str() {
-        "GET" => handle_get_inquiries(&db, email, &cors_origin).await,
+        "GET" => handle_get_inquiries(&db, email, cognito_sub, &cors_origin).await,
         "POST" => {
             let body = event.body.as_deref().unwrap_or("");
-            handle_post_inquiry(&db, email, body, &cors_origin).await
+            handle_post_inquiry(&db, email, cognito_sub, body, &cors_origin).await
         }
         _ => Ok(Response::error(
             405,

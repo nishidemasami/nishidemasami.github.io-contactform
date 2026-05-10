@@ -34,7 +34,9 @@ pub(crate) struct Jwt {
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct Claims {
-    pub(crate) email: String,
+    pub(crate) email: Option<String>,
+    #[serde(rename = "sub")]
+    pub(crate) cognito_sub: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -180,6 +182,14 @@ mod tests {
         assert_eq!(req.subject, "Hello");
         assert_eq!(req.body, "World");
     }
+
+    #[test]
+    fn test_claims_deserialization_with_missing_sub() {
+        let json = r#"{"email":"test@example.com"}"#;
+        let claims: Claims = serde_json::from_str(json).unwrap();
+        assert_eq!(claims.email.as_deref(), Some("test@example.com"));
+        assert_eq!(claims.cognito_sub, None);
+    }
 }
 
 #[cfg(test)]
@@ -257,8 +267,9 @@ mod prop_tests {
             body in "[A-Za-z0-9 ]{1,200}",
         ) {
             let id = uuid::Uuid::now_v7();
+            let cognito_sub = uuid::Uuid::now_v7();
             let now = chrono::Utc::now().fixed_offset();
-            let inquiry = Inquiry { id, email: email.clone(), subject: subject.clone(), body: body.clone(), created_at: now };
+            let inquiry = Inquiry { id, cognito_sub, email: email.clone(), subject: subject.clone(), body: body.clone(), created_at: now };
             let json = serde_json::to_value(&inquiry).unwrap();
             prop_assert_eq!(json["email"].as_str(), Some(email.as_str()));
             prop_assert_eq!(json["subject"].as_str(), Some(subject.as_str()));
