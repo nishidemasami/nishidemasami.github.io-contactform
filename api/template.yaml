@@ -27,7 +27,7 @@ Resources:
   SelectFunctionLambdaRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: select-function-lambda-role-${Stage}
+      RoleName: !Sub select-function-lambda-role-${Stage}
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
