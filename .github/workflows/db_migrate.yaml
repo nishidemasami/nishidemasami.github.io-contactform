@@ -20,6 +20,7 @@ on:
 env:
   AWS_REGION: ap-northeast-3
   SAM_TEMPLATE: infrastructure/liquibase_migrate/template.yaml
+  LIQUIBASE_CONTEXT: ${{ github.ref_name }}
 
 jobs:
   validate:
@@ -138,6 +139,7 @@ jobs:
         run: |
           liquibase update \
             --changelog-file=infrastructure/liquibase_migrate/changelog.xml \
+            --contexts=${{ env.LIQUIBASE_CONTEXT }} \
             --url=jdbc:postgresql://$(aws cloudformation describe-stacks \
               --stack-name nishidemasami-github-io-contactform-db-${{ github.ref_name }} \
               --query "Stacks[0].Outputs[?OutputKey=='DSQLClusterEndpoint'].OutputValue" \
