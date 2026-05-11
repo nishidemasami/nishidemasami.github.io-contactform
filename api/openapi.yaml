@@ -1,19 +1,19 @@
 openapi: "3.0.1"
 info:
-  title: "snngicf-api-develop-http-api-develop"
+  title: "snngicf-api-main-http-api-main"
   version: "1.0"
 servers:
-- url: "https://cpsffdt4je.execute-api.ap-northeast-3.amazonaws.com/{basePath}"
+- url: "https://ean35go6te.execute-api.ap-northeast-3.amazonaws.com/{basePath}"
   variables:
     basePath:
       default: ""
 tags:
 - name: "aws:cloudformation:stack-name"
-  x-amazon-apigateway-tag-value: "snngicf-api-develop"
+  x-amazon-apigateway-tag-value: "snngicf-api-main"
 - name: "aws:cloudformation:logical-id"
   x-amazon-apigateway-tag-value: "HttpApi"
 - name: "aws:cloudformation:stack-id"
-  x-amazon-apigateway-tag-value: "arn:aws:cloudformation:ap-northeast-3:672530906129:stack/snngicf-api-develop/c6997960-4d08-11f1-9d0e-0e667e501855"
+  x-amazon-apigateway-tag-value: "arn:aws:cloudformation:ap-northeast-3:672530906129:stack/snngicf-api-main/bcfabe30-4d14-11f1-b804-0e0ed225c2ed"
 - name: "httpapi:createdBy"
   x-amazon-apigateway-tag-value: "SAM"
 paths:
@@ -28,7 +28,7 @@ paths:
         payloadFormatVersion: "2.0"
         type: "aws_proxy"
         httpMethod: "POST"
-        uri: "arn:aws:apigateway:ap-northeast-3:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-northeast-3:672530906129:function:snngicf-api-develop-InquiryDbFunction-woxUO5naVPPM/invocations"
+        uri: "arn:aws:apigateway:ap-northeast-3:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-northeast-3:672530906129:function:snngicf-api-main-InquiryDbFunction-MXgwca4dONPj/invocations"
         connectionType: "INTERNET"
     post:
       responses:
@@ -40,7 +40,7 @@ paths:
         payloadFormatVersion: "2.0"
         type: "aws_proxy"
         httpMethod: "POST"
-        uri: "arn:aws:apigateway:ap-northeast-3:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-northeast-3:672530906129:function:snngicf-api-develop-InquiryDbFunction-woxUO5naVPPM/invocations"
+        uri: "arn:aws:apigateway:ap-northeast-3:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-northeast-3:672530906129:function:snngicf-api-main-InquiryDbFunction-MXgwca4dONPj/invocations"
         connectionType: "INTERNET"
 components:
   securitySchemes:
@@ -51,8 +51,8 @@ components:
         identitySource: "$request.header.Authorization"
         jwtConfiguration:
           audience:
-          - "10e3ku62o0cm6n1gt2h65s1u9t"
-          issuer: "https://cognito-idp.ap-northeast-3.amazonaws.com/ap-northeast-3_kZfu7imK2"
+          - "6014kp92hbm0ejhi3dv3m06kse"
+          issuer: "https://cognito-idp.ap-northeast-3.amazonaws.com/ap-northeast-3_XHm2Aia4s"
         type: "jwt"
 x-amazon-apigateway-cors:
   allowMethods:
@@ -67,5 +67,5 @@ x-amazon-apigateway-cors:
   maxAge: -42
   allowCredentials: false
   allowOrigins:
-  - "https://ngicf-testpage.pages.dev"
+  - "https://nishidemasami.github.io"
 x-amazon-apigateway-importexport-version: "1.0"
