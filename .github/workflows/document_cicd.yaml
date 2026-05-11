@@ -36,23 +36,23 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Setup Rust
-      #   uses: dtolnay/rust-toolchain@stable
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
 
-      # - name: Cache Rust dependencies
-      #   uses: Swatinem/rust-cache@v2
-      #   with:
-      #     workspaces: api/lambda
-      #     cache-on-failure: true
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: api/lambda
+          cache-on-failure: true
 
-      # - name: Generate API documentation
-      #   working-directory: api/lambda
-      #   run: cargo doc --no-deps
+      - name: Generate API documentation
+        working-directory: api/lambda
+        run: cargo doc --no-deps
 
-      # - name: Copy documentation to _output
-      #   run: |
-      #     mkdir -p _output/raw/api
-      #     cp -r api/lambda/target/doc/* _output/raw/api/
+      - name: Copy documentation to _output
+        run: |
+          mkdir -p _output/raw/api
+          cp -r api/lambda/target/doc/* _output/raw/api/
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -82,14 +82,14 @@ jobs:
           mkdir -p _output/raw/storybook
           cp -r testpage/storybook-static/* _output/raw/storybook/
 
-      # - name: Generate SwaggerUI
-      #   run: |
-      #     mkdir -p _output/raw/openapi
-      #     cp /api/openapi.yaml _output/raw/openapi/
-      #     npm install --prefix /tmp/swagger-ui-dist swagger-ui-dist@5.32.5
-      #     SWAGGER_DIST=/tmp/swagger-ui-dist/node_modules/swagger-ui-dist
-      #     cp -r "$SWAGGER_DIST"/* _output/raw/openapi/
-      #     sed -i 's|https://petstore.swagger.io/v2/swagger.json|./openapi.yaml|g' _output/raw/openapi/swagger-initializer.js
+      - name: Generate SwaggerUI
+        run: |
+          mkdir -p _output/raw/openapi
+          cp api/openapi.yaml _output/raw/openapi/
+          npm install --prefix /tmp/swagger-ui-dist swagger-ui-dist@5.32.5
+          SWAGGER_DIST=/tmp/swagger-ui-dist/node_modules/swagger-ui-dist
+          cp -r "$SWAGGER_DIST"/* _output/raw/openapi/
+          swagger-initializer.js
 
       - name: Generate wiki pages
         working-directory: docs
