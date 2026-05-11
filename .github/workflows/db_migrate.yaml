@@ -208,8 +208,9 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
-          git diff --quiet infrastructure/sea_orm/src/entity \
-            || echo "changed=true" >> "$GITHUB_OUTPUT"
+          if [[ -n "$(git status --porcelain --untracked-files=all -- infrastructure/sea_orm/src/entity)" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Commit and create pull request for generated entity structs
         if: steps.changes.outputs.changed == 'true'
