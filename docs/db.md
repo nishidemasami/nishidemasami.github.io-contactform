@@ -43,7 +43,7 @@
 | 関数 | `get_inquiries_by_email(p_email VARCHAR(255))` |
 | ロール | `selectview` |
 | 権限 | `selectview` に関数実行権限、および `public` スキーマの全テーブルへの `SELECT, INSERT, UPDATE` を付与 |
-| IAM 連携 | `arn:aws:iam::779854054594:role/select-function-lambda-role` に `selectview` を付与 |
+| IAM 連携 | `arn:aws:iam::672530906129:role/select-function-lambda-role` に `selectview` を付与 |
 
 現在の API 実装は `selectview` ロールで DSQL に接続し、`inquiries` テーブルへ直接 `SELECT` / `INSERT` を実行します。`get_inquiries_by_email` 関数は DB 側に存在しますが、Rust ハンドラーからはまだ使っていません。
 
