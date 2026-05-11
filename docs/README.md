@@ -1,10 +1,11 @@
 # nishidemasami.github.io-contactform ドキュメント
 
-この Wiki は、`nishidemasami.github.io-contactform` リポジトリの **API / 認証 / データベース / CI/CD** を俯瞰するための入口です。Honkit の表紙として使う前提で、各トピックへの導線と現在の実装状況をまとめています。
+この Wiki は、`nishidemasami.github.io-contactform` リポジトリの **API / 認証 / データベース / CI/CD / FAQ** を横断して確認するための表紙です。Honkit の `README.md` として使う前提で、各ページへの入口と運用上の注意点をまとめています。
 
 ## 読み始め
 
 - [目次](SUMMARY.md)
+- [FAQ](FAQ.md)
 - [API](api.md)
 - [認証](auth.md)
 - [データベース](db.md)
@@ -14,22 +15,24 @@
 
 | 領域 | 現在の状態 | 主なソース |
 | --- | --- | --- |
-| API | `api/template.yaml` と `api/lambda/` で、Cognito JWT 認証付きの HTTP API と Rust Lambda を管理しています。 | [`../api/template.yaml`](../api/template.yaml), [`../api/lambda/src/`](../api/lambda/src/) |
-| 認証 | Cognito User Pool / User Pool Client を AWS SAM でデプロイします。 | [`../infrastructure/auth/template.yaml`](../infrastructure/auth/template.yaml) |
-| データベース | AWS DSQL クラスター、Liquibase 変更セット、SeaORM エンティティ生成を管理しています。 | [`../infrastructure/liquibase_migrate/`](../infrastructure/liquibase_migrate/), [`../infrastructure/sea_orm/`](../infrastructure/sea_orm/) |
-| CI/CD | GitHub Actions で API / 認証 / DB / ドキュメント / Wiki 更新を自動化しています。 | [`../.github/workflows/`](../.github/workflows/) |
-| フロント検証 | `testpage/` で Cognito と API を接続する Next.js 検証ページを管理しています。 | [`../testpage/`](../testpage/) |
+| API | `api/template.yaml` と `api/lambda/` で、Cognito JWT Authorizer 付き HTTP API と Rust Lambda を管理しています。 | [`../api/template.yaml`](../api/template.yaml), [`../api/lambda/src/`](../api/lambda/src/) |
+| 認証 | `infrastructure/auth/template.yaml` で Cognito User Pool / User Pool Client を `develop` と `main` 向けにデプロイします。 | [`../infrastructure/auth/template.yaml`](../infrastructure/auth/template.yaml) |
+| データベース | `infrastructure/liquibase_migrate/` で Aurora DSQL クラスターと Liquibase 変更セットを管理し、CI で SeaORM エンティティを再生成します。 | [`../infrastructure/liquibase_migrate/`](../infrastructure/liquibase_migrate/), [`../infrastructure/sea_orm/src/entity/`](../infrastructure/sea_orm/src/entity/) |
+| CI/CD | GitHub Actions で API / 認証 / DB / ドキュメント配信 / Wiki 更新を自動化しています。 | [`../.github/workflows/`](../.github/workflows/) |
+| フロント検証 | `testpage/` の静的 Next.js アプリが Cognito と API をつないで検証 UI を提供し、Cloudflare Pages に配信されます。 | [`../testpage/`](../testpage/) |
 
 ## ページ案内
 
-- [API](api.md): `/inquiries` エンドポイント、Lambda の処理、認証・DB 依存を整理します。
-- [認証](auth.md): Cognito のリソース構成、出力値、API 側との接続点を整理します。
-- [データベース](db.md): DSQL、Liquibase、DB ロール、SeaORM 生成物を整理します。
-- [CI/CD](cicd.md): GitHub Actions 各ワークフローの役割、トリガー、生成物を整理します。
+- [FAQ](FAQ.md): 全体の通信経路や命名ルールなど、全ページにまたがる前提をまとめます。
+- [API](api.md): `/inquiries` エンドポイント、Lambda 実装、認証・DB 依存を整理します。
+- [認証](auth.md): Cognito のリソース構成、Outputs、API / testpage との接続点を整理します。
+- [データベース](db.md): Aurora DSQL、Liquibase、DB ロール、SeaORM 生成フローを整理します。
+- [CI/CD](cicd.md): GitHub Actions 各ワークフローの役割、トリガー、生成物、ドキュメント反映の流れを整理します。
 
-## 更新方針
+## 更新時の着眼点
 
-- API のエンドポイント、レスポンス、環境変数、OpenAPI 出力の扱いが変わったら [API](api.md) と [CI/CD](cicd.md) を一緒に更新します。
-- Cognito の Output や JWT 前提を変えたら [認証](auth.md) と API/CI の参照先を見直します。
-- DB スキーマや権限が変わったら [データベース](db.md) に加え、API 実装が依存する箇所も確認します。
-- ワークフローを追加・変更したら [CI/CD](cicd.md) とこの表紙の概要表を同期します。
+- API のエンドポイント、CORS、環境変数、OpenAPI 出力の扱いが変わったら [API](api.md) と [CI/CD](cicd.md) を一緒に更新します。
+- Cognito の Outputs や JWT 前提を変えたら [認証](auth.md)、[API](api.md)、[FAQ](FAQ.md) の接続説明を見直します。
+- DB スキーマ、権限、Export 名が変わったら [データベース](db.md) と API の依存説明を同期します。
+- GitHub Actions を追加・変更したら [CI/CD](cicd.md) だけでなく、この表紙と [SUMMARY.md](SUMMARY.md) の導線も更新します。
+- `document_cicd.yaml` は `docs/**` を監視していないため、**Wiki だけを更新しても公開ドキュメントは自動再配信されません**。必要に応じて手動実行や別のトリガーを考慮します。

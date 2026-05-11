@@ -22,22 +22,24 @@ GitHub Actions は `.github/workflows/` 配下で管理され、現在は **API 
 | ドキュメント | `develop` への `push`・`pull_request`・`workflow_dispatch` | `.github/workflows/document_cicd.yaml`, `testpage/**` |
 | Wiki 更新 | `workflow_dispatch` | なし |
 
+`document_cicd.yaml` は `docs/**` を監視していないため、**Wiki だけを更新しても自動では再配信されません**。公開ドキュメントへ反映したい場合は `workflow_dispatch` などの別トリガーが必要です。
+
 ## API デプロイ
 
 `api_cicd.yaml` は 3 ジョブ構成です。
 
 1. `validate`: `sam validate --lint`、`cargo check`、`cargo test`
-2. `deploy`: Rust Lambda を `sam build` / `sam deploy`
-3. `export_openapi`: デプロイ済み API Gateway から `/api/openapi.yaml` をエクスポートし、差分があればコミット
+2. `deploy`: `sam build` と `sam deploy` で Rust Lambda を含む API をデプロイ
+3. `export_openapi`: デプロイ済み API Gateway から `api/openapi.yaml` をエクスポートし、差分があればコミット
 
-API 側は [認証](auth.md) の Export を JWT Authorizer に、[データベース](db.md) の endpoint を Lambda 環境変数に利用します。
+API 側は [認証](auth.md) の Export を JWT Authorizer に、[データベース](db.md) の endpoint を Lambda 環境変数に使います。
 
 ## Cognito デプロイ
 
 `cognito_cicd.yaml` は 2 ジョブ構成です。
 
 1. `validate`: `sam validate --lint`
-2. `deploy`: pull request 以外で Cognito リソースを SAM デプロイ
+2. `deploy`: pull request 以外で Cognito リソースを `sam deploy`
 
 `Stage=${{ github.ref_name }}` を渡すため、`develop` ブランチは develop 環境、`main` ブランチは main 環境に対応します。
 
@@ -48,9 +50,9 @@ API 側は [認証](auth.md) の Export を JWT Authorizer に、[データベ�
 1. `validate`: DB 用 SAM テンプレートを検証
 2. `deploy`: DSQL クラスターをデプロイし endpoint を取得
 3. `migrate`: Liquibase で `changelog.xml` を適用
-4. `generate`: `sea-orm-cli` で `infrastructure/sea_orm/src/entity` を更新し、差分があればコミット
+4. `generate`: `sea-orm-cli generate entity` で `infrastructure/sea_orm/src/entity` を更新し、差分があればコミット
 
-`generate` ジョブでは DSQL の管理者トークンを URL エンコードして `DATABASE_URL` を組み立てています。
+`generate` ジョブでは Aurora DSQL の admin 認証トークンを URL エンコードして `DATABASE_URL` を組み立てています。
 
 ## ドキュメント配信
 
@@ -63,11 +65,11 @@ API 側は [認証](auth.md) の Export を JWT Authorizer に、[データベ�
 5. Cognito / API の CloudFormation Export を読んで Next.js を静的ビルド
 6. `_output/` を Cloudflare Pages に配信
 
-このワークフローは、**実行時に `docs/README.md` へ追記してから Honkit をビルドする** ため、コミット済み Wiki と配信時の表紙に差分が出る点に注意が必要です。
+このワークフローは、**ビルド時の作業ツリーで `docs/README.md` にリンクを追記してから Honkit を生成する** ため、コミット済みファイルと公開ページの表紙に一時的な差分が生じます。
 
 ## Wiki 更新フロー
 
-`update-wiki.yml` は手動実行専用で、`docs/AGENTS.md` を前提に Copilot CLI へ Wiki 更新を依頼します。変更があれば `docs/` をコミットし、新規ブランチから Pull Request を作成します。
+`update-wiki.yml` は手動実行専用で、`docs/AGENTS.md` を前提に Copilot CLI へ Wiki 更新を依頼します。変更があれば `docs/` をコミットし、新規ブランチを作成して `main` 向け Pull Request を作成します。
 
 ## 依存関係
 
@@ -82,6 +84,7 @@ API 側は [認証](auth.md) の Export を JWT Authorizer に、[データベ�
 ## 関連ページ
 
 - [README](README.md)
+- [FAQ](FAQ.md)
 - [API](api.md)
 - [認証](auth.md)
 - [データベース](db.md)
