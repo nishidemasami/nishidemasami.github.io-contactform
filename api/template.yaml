@@ -18,7 +18,7 @@ Parameters:
 Mappings:
   StageCorsMap:
     develop:
-      AllowOrigin: "https://nishidemasami-github-io-contactform-test.pages.dev"
+      AllowOrigin: "https://ngicf-testpage.pages.dev"
     main:
       AllowOrigin: "https://nishidemasami.github.io"
 

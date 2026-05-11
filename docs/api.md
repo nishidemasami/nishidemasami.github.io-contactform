@@ -65,7 +65,7 @@ Issuer と Audience は [認証](auth.md) の CloudFormation Export を `Fn::Imp
 | `DSQL_REGION` | DSQL 接続リージョン | SAM テンプレート固定値 (`ap-northeast-3`) |
 | `CORS_ORIGIN` | `Access-Control-Allow-Origin` | Stage ごとの CORS マッピング |
 
-Rust 側の既定 CORS Origin は `https://nishidemasami-github-io-contactform-test.pages.dev` ですが、通常は SAM テンプレートから環境変数で上書きされます。
+Rust 側の既定 CORS Origin は `ngicf-testpage.pages.dev` ですが、通常は SAM テンプレートから環境変数で上書きされます。
 
 ## エラー動作
 

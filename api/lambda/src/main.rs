@@ -11,7 +11,7 @@ use handlers::{handle_get_inquiries, handle_post_inquiry};
 use models::{Request, Response};
 
 static CORS_ORIGIN: LazyLock<String> = LazyLock::new(|| {
-    env::var("CORS_ORIGIN").unwrap_or_else(|_| "https://nishidemasami-github-io-contactform-test.pages.dev".to_string())
+    env::var("CORS_ORIGIN").unwrap_or_else(|_| "https://ngicf-testpage.pages.dev".to_string())
 });
 
 /// メインのLambda関数ハンドラー
