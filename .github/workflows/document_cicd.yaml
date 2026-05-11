@@ -138,7 +138,7 @@ jobs:
         run: |
           mkdir -p _output/raw/openapi
           cp api/openapi.yaml _output/raw/openapi/
-          echo '<!doctype html><html>  <head>    <meta charset="utf-8" />    <script src="./rapidoc-min.js"></script>  </head>  <body>    <rapi-doc      spec-url="./openapi.yaml"      render-style="focused"      show-header="false"      allow-authentication="true"      persist-auth="true"      theme="dark"    oauth2-client-id="${{ steps.cognito.outputs.CLIENT_ID }}"    oauth2-scope="openid email" oauth2-pkce="true">    </rapi-doc>  </body></html>' > _output/raw/openapi/index.html
+          echo '<!doctype html><html>  <head>    <meta charset="utf-8" />    <script src="./rapidoc-min.js"></script>  </head>  <body>    <rapi-doc      spec-url="./openapi.yaml"      render-style="read"      show-header="false"    allow-try="true"  allow-authentication="true"      persist-auth="true"      theme="dark"    oauth2-client-id="${{ steps.cognito.outputs.CLIENT_ID }}"    oauth2-scope="openid email" oauth2-pkce="true">    </rapi-doc>  </body></html>' > _output/raw/openapi/index.html
           curl -L https://unpkg.com/rapidoc@9.3.8/dist/rapidoc-min.js -o _output/raw/openapi/rapidoc-min.js
           # npm install --prefix /tmp/swagger-ui-dist swagger-ui-dist@5.32.5
           # SWAGGER_DIST=/tmp/swagger-ui-dist/node_modules/swagger-ui-dist
