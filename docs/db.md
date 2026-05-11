@@ -58,10 +58,11 @@
 | 005 | `005_create_role_selectview.sql` | `selectview` ロール作成 |
 | 009 | `009_create_get_inquiries_by_email.sql` | メールアドレス検索関数作成 |
 | 010 | `010_grant_function_selectview.sql` | 関数実行権限付与 |
-| 011 | `011_aws_iam_grant_select-function-lambda-role.sql` | IAM ロールへ DB ロール付与 |
+| 015 | `015_aws_iam_grant_select-function-lambda-role-develop.sql` | IAM ロールへ DB ロール付与（develop） |
+| 016 | `016_aws_iam_grant_select-function-lambda-role-main.sql` | IAM ロールへ DB ロール付与（main） |
 | 012 | `012_grant_selectview.sql` | テーブル権限付与 |
 
-`changelog.xml` に含まれる変更セットは上記のみで、`006`〜`008` は現時点で未使用です。
+`changelog.xml` に含まれる変更セットは上記のみで、`006`〜`008` は現時点で未使用です。`context=local` では PostgreSQL 互換の変更のみを実行し、Aurora DSQL 専用変更は `main` / `develop` context でのみ実行します。
 
 ## SeaORM 連携
 
