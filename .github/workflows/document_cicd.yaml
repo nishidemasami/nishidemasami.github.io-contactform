@@ -16,6 +16,7 @@ on:
   workflow_dispatch:
 
 env:
+  STACKNAME_PREFIX: snngicf
   AWS_REGION: ap-northeast-3
 
 jobs:
@@ -126,17 +127,17 @@ jobs:
         id: cognito
         run: |
           USER_POOL_ID=$(aws cloudformation list-exports \
-            --query "Exports[?Name=='nishidemasami-github-io-contactform-auth-${{ github.ref_name }}-CognitoUserPoolId'].Value" \
+            --query "Exports[?Name=='${{ env.STACKNAME_PREFIX }}-auth-${{ github.ref_name }}-CognitoUserPoolId'].Value" \
             --output text)
           echo "USER_POOL_ID=$USER_POOL_ID" >> $GITHUB_OUTPUT
 
           CLIENT_ID=$(aws cloudformation list-exports \
-            --query "Exports[?Name=='nishidemasami-github-io-contactform-auth-${{ github.ref_name }}-CognitoUserPoolClientId'].Value" \
+            --query "Exports[?Name=='${{ env.STACKNAME_PREFIX }}-auth-${{ github.ref_name }}-CognitoUserPoolClientId'].Value" \
             --output text)
           echo "CLIENT_ID=$CLIENT_ID" >> $GITHUB_OUTPUT
 
           API_ENDPOINT=$(aws cloudformation list-exports \
-            --query "Exports[?Name=='nishidemasami-github-io-contactform-api-${{ github.ref_name }}-HttpApiUrl-${{ github.ref_name }}'].Value" \
+            --query "Exports[?Name=='${{ env.STACKNAME_PREFIX }}-api-${{ github.ref_name }}-HttpApiUrl-${{ github.ref_name }}'].Value" \
             --output text)
           echo "API_ENDPOINT=$API_ENDPOINT" >> $GITHUB_OUTPUT
 

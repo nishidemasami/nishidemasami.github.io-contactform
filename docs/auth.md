@@ -15,7 +15,8 @@
 | `CognitoUserPool` | ユーザー管理本体 | `${StackNamePrefix}-user-pool-${Stage}` |
 | `CognitoUserPoolClient` | API / フロントエンドが使うアプリクライアント | `${StackNamePrefix}-app-client-${Stage}` |
 
-`StackNamePrefix` の既定値は `nishidemasami-github-io-contactform`、`Stage` は `develop` または `main` です。
+`StackNamePrefix` の既定値は `snngicf`です。これは、各リソースの名前が長すぎる場合にエラーとなる場合があるためです。
+`Stage` の規定値は `develop` または `main` です。
 
 ## User Pool 設定
 

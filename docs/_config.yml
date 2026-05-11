@@ -31,6 +31,7 @@ github_username: nishidemasami
 # Build settings
 theme: minima
 plugins:
+  - jekyll-spaceship
   - jekyll-seo-tag
 # - jekyll-feed
 

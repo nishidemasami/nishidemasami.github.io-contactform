@@ -18,6 +18,7 @@ on:
   workflow_dispatch:
 
 env:
+  STACKNAME_PREFIX: snngicf
   AWS_REGION: ap-northeast-3
   SAM_TEMPLATE: infrastructure/liquibase_migrate/template.yaml
 
@@ -78,7 +79,7 @@ jobs:
         run: |
           sam deploy \
             --template ${{ env.SAM_TEMPLATE }} \
-            --stack-name nishidemasami-github-io-contactform-db-${{ github.ref_name }} \
+            --stack-name ${{ env.STACKNAME_PREFIX }}-db-${{ github.ref_name }} \
             --capabilities CAPABILITY_IAM \
             --parameter-overrides Stage=${{ github.ref_name }} \
             --no-confirm-changeset \
@@ -89,7 +90,7 @@ jobs:
         id: endpoint
         run: |
           ENDPOINT=$(aws cloudformation describe-stacks \
-            --stack-name nishidemasami-github-io-contactform-db-${{ github.ref_name }} \
+            --stack-name ${{ env.STACKNAME_PREFIX }}-db-${{ github.ref_name }} \
             --query 'Stacks[0].Outputs[?OutputKey==`DSQLClusterEndpoint`].OutputValue' \
             --output text)
           echo "DSQL_ENDPOINT=$ENDPOINT" >> $GITHUB_OUTPUT
@@ -139,11 +140,11 @@ jobs:
           liquibase update \
             --changelog-file=infrastructure/liquibase_migrate/changelog.xml \
             --url=jdbc:postgresql://$(aws cloudformation describe-stacks \
-              --stack-name nishidemasami-github-io-contactform-db-${{ github.ref_name }} \
+              --stack-name ${{ env.STACKNAME_PREFIX }}-db-${{ github.ref_name }} \
               --query "Stacks[0].Outputs[?OutputKey=='DSQLClusterEndpoint'].OutputValue" \
               --output text):5432/postgres \
             --username=admin \
-            --password="$(aws dsql generate-db-connect-admin-auth-token --region ap-northeast-3  --expires-in 3600  --hostname $(aws cloudformation describe-stacks --stack-name nishidemasami-github-io-contactform-db-${{ github.ref_name }}  --query "Stacks[0].Outputs[?OutputKey=='DSQLClusterEndpoint'].OutputValue"  --output text))"
+            --password="$(aws dsql generate-db-connect-admin-auth-token --region ${{ env.AWS_REGION }}  --expires-in 3600  --hostname $(aws cloudformation describe-stacks --stack-name ${{ env.STACKNAME_PREFIX }}-db-${{ github.ref_name }}  --query "Stacks[0].Outputs[?OutputKey=='DSQLClusterEndpoint'].OutputValue"  --output text))"
 
   generate:
     name: Generate SeaORM Entity Structs
@@ -170,7 +171,7 @@ jobs:
         id: endpoint
         run: |
           ENDPOINT=$(aws cloudformation describe-stacks \
-            --stack-name nishidemasami-github-io-contactform-db-${{ github.ref_name }} \
+            --stack-name ${{ env.STACKNAME_PREFIX }}-db-${{ github.ref_name }} \
             --query "Stacks[0].Outputs[?OutputKey=='DSQLClusterEndpoint'].OutputValue" \
             --output text)
           echo "DSQL_ENDPOINT=$ENDPOINT" >> "$GITHUB_OUTPUT"

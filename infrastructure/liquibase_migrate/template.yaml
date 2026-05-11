@@ -11,9 +11,9 @@ Parameters:
       - main
   StackNamePrefix:
     Type: String
-    Default: nishidemasami-github-io-contactform
+    Default: snngicf
     AllowedValues:
-      - nishidemasami-github-io-contactform
+      - snngicf
 
 Resources:
   # Aurora DSQL Cluster

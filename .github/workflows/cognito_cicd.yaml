@@ -18,6 +18,7 @@ on:
   workflow_dispatch:
 
 env:
+  STACKNAME_PREFIX: snngicf
   AWS_REGION: ap-northeast-3
   SAM_TEMPLATE: infrastructure/auth/template.yaml
 
@@ -78,7 +79,7 @@ jobs:
         run: |
           sam deploy \
             --template ${{ env.SAM_TEMPLATE }} \
-            --stack-name nishidemasami-github-io-contactform-auth-${{ github.ref_name }} \
+            --stack-name ${{ env.STACKNAME_PREFIX }}-auth-${{ github.ref_name }} \
             --capabilities CAPABILITY_IAM \
             --parameter-overrides Stage=${{ github.ref_name }} \
             --no-confirm-changeset \
