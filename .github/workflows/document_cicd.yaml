@@ -82,24 +82,14 @@ jobs:
           mkdir -p _output/raw/storybook
           cp -r testpage/storybook-static/* _output/raw/storybook/
 
-      - name: Generate SwaggerUI
-        run: |
-          mkdir -p _output/raw/openapi
-          cp api/openapi.yaml _output/raw/openapi/
-          echo '<!doctype html><html>  <head>    <meta charset="utf-8" />    <script src="./rapidoc-min.js"></script>  </head>  <body>    <rapi-doc      spec-url="./openapi.yaml"      render-style="focused"      show-header="false"      allow-authentication="true"      persist-auth="true"      theme="dark"    >    </rapi-doc>  </body></html>' > _output/raw/openapi/index.html
-          curl -L https://unpkg.com/rapidoc/dist/rapidoc-min.js -o _output/raw/openapi/rapidoc-min.js
-          # npm install --prefix /tmp/swagger-ui-dist swagger-ui-dist@5.32.5
-          # SWAGGER_DIST=/tmp/swagger-ui-dist/node_modules/swagger-ui-dist
-          # cp -r "$SWAGGER_DIST"/* _output/raw/openapi/
-
       - name: Generate wiki pages
         working-directory: docs
         run: |
           echo "" >> README.md
           echo "## リンク" >> README.md
           echo '- <a href="/testpage/" target="_blank">テストページ</a>' >> README.md
-          echo '- <a href="/raw/openapi/" target="_blank">バックエンドAPI ドキュメント（Rustdoc）</a>' >> README.md
-          echo '- <a href="/raw/api/api_handler/index.html" target="_blank">API ドキュメント（OpenAPI）</a>' >> README.md
+          echo '- <a href="/raw/openapi/" target="_blank">API ドキュメント（OpenAPI）</a>' >> README.md
+          echo '- <a href="/raw/api/api_handler/index.html" target="_blank">バックエンドAPI ドキュメント（Rustdoc）</a>' >> README.md
           echo '- <a href="/raw/storybook/" target="_blank">テストページ ドキュメント（Storybook）</a>' >> README.md
           echo '- <a href="/raw/testpage/" target="_blank">テストページ ドキュメント（TypeDoc）</a>' >> README.md
           mkdir -p _book
@@ -143,6 +133,16 @@ jobs:
             --query "Exports[?Name=='${{ env.STACKNAME_PREFIX }}-api-${{ github.ref_name }}-HttpApiUrl-${{ github.ref_name }}'].Value" \
             --output text)
           echo "API_ENDPOINT=$API_ENDPOINT" >> $GITHUB_OUTPUT
+
+      - name: Generate SwaggerUI
+        run: |
+          mkdir -p _output/raw/openapi
+          cp api/openapi.yaml _output/raw/openapi/
+          echo '<!doctype html><html>  <head>    <meta charset="utf-8" />    <script src="./rapidoc-min.js"></script>  </head>  <body>    <rapi-doc      spec-url="./openapi.yaml"      render-style="focused"      show-header="false"      allow-authentication="true"      persist-auth="true"      theme="dark"    oauth2-client-id="${{ steps.cognito.outputs.CLIENT_ID }}"    oauth2-scope="openid email" oauth2-pkce="true">    </rapi-doc>  </body></html>' > _output/raw/openapi/index.html
+          curl -L https://unpkg.com/rapidoc/dist/rapidoc-min.js -o _output/raw/openapi/rapidoc-min.js
+          # npm install --prefix /tmp/swagger-ui-dist swagger-ui-dist@5.32.5
+          # SWAGGER_DIST=/tmp/swagger-ui-dist/node_modules/swagger-ui-dist
+          # cp -r "$SWAGGER_DIST"/* _output/raw/openapi/
 
       - name: Install dependencies
         working-directory: testpage
