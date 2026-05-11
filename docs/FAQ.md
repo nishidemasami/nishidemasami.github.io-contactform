@@ -2,7 +2,7 @@
 
 ## ブラウザから API Gateway、Lambda、Aurora DSQL への流れは？
 
-```plantuml!
+```plantuml
 left to right direction
 skinparam backgroundColor transparent
 skinparam defaultFontname Meiryo
