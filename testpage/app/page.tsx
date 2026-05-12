@@ -2,7 +2,11 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Authenticator } from '@aws-amplify/ui-react';
+import { Authenticator, translations } from '@aws-amplify/ui-react';
+import { I18n } from 'aws-amplify/utils';
+
+I18n.putVocabularies(translations);
+I18n.setLanguage('ja');
 
 /**
  * AuthenticatedRedirect コンポーネント。
