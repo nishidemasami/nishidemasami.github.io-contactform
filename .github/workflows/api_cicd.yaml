@@ -46,6 +46,33 @@ jobs:
         run: |
           sam validate --template ${{ env.SAM_TEMPLATE }} --lint
 
+      - name: Start local PostgreSQL for Rust tests
+        run: |
+          docker run --name contactform-postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_DB=postgres \
+            -p 5432:5432 \
+            -d postgres:16.13
+          until docker exec contactform-postgres pg_isready -U postgres -d postgres; do
+            sleep 1
+          done
+
+      - name: Run Liquibase migrations for local test DB
+        run: |
+          docker run --rm \
+            -e LIQUIBASE_HUB_MODE=off \
+            --network host \
+            -v "${{ github.workspace }}:/workspace" \
+            liquibase/liquibase:4.33.0 \
+            --search-path=/workspace \
+            --changelog-file=infrastructure/liquibase_migrate/changelog.xml \
+            --contexts=local \
+            --url=jdbc:postgresql://localhost:5432/postgres \
+            --username=postgres \
+            --password=postgres \
+            update
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -61,7 +88,7 @@ jobs:
 
       - name: Run Rust tests
         working-directory: api/lambda
-        run: cargo test
+        run: cargo test -- --include-ignored
 
   deploy:
     name: Deploy API
