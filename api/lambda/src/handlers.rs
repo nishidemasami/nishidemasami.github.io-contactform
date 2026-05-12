@@ -127,31 +127,45 @@ mod tests {
         let body = r#"{"subject":"subject from test","body":"body from test"}"#;
         cleanup_test_inquiries(&db, &email).await;
 
-        let response = handle_post_inquiry(&db, &email, cognito_sub, body, "https://example.com")
-            .await
-            .expect("handle_post_inquiry should succeed");
+        let db_for_test = db.clone();
+        let email_for_test = email.clone();
+        let test_result = tokio::spawn(async move {
+            let response =
+                handle_post_inquiry(&db_for_test, &email_for_test, cognito_sub, body, "https://example.com")
+                    .await
+                    .expect("handle_post_inquiry should succeed");
 
-        assert_eq!(response.status_code, 201);
-        let response_body: serde_json::Value =
-            serde_json::from_str(&response.body).expect("response body should be valid JSON");
-        assert_eq!(response_body["inquiry"]["email"], email);
-        assert_eq!(response_body["inquiry"]["subject"], "subject from test");
-        assert_eq!(response_body["inquiry"]["body"], "body from test");
+            assert_eq!(response.status_code, 201);
+            let response_body: serde_json::Value =
+                serde_json::from_str(&response.body).expect("response body should be valid JSON");
+            assert_eq!(response_body["inquiry"]["email"], email_for_test);
+            assert_eq!(response_body["inquiry"]["subject"], "subject from test");
+            assert_eq!(response_body["inquiry"]["body"], "body from test");
 
-        let inquiry_id = uuid::Uuid::parse_str(
-            response_body["inquiry"]["id"]
-                .as_str()
-                .expect("response should include inquiry id"),
-        )
-        .expect("inquiry id should be valid UUID");
-        let saved = Inquiries::find_by_id(inquiry_id)
-            .one(&db)
-            .await
-            .expect("DB query should succeed")
-            .expect("inserted inquiry should exist");
-        assert_eq!(saved.email, email);
-        assert_eq!(saved.cognito_sub, cognito_sub);
+            let inquiry_id = uuid::Uuid::parse_str(
+                response_body["inquiry"]["id"]
+                    .as_str()
+                    .expect("response should include inquiry id"),
+            )
+            .expect("inquiry id should be valid UUID");
+            let saved = Inquiries::find_by_id(inquiry_id)
+                .one(&db_for_test)
+                .await
+                .expect("DB query should succeed")
+                .expect("inserted inquiry should exist");
+            assert_eq!(saved.email, email_for_test);
+            assert_eq!(saved.cognito_sub, cognito_sub);
+        })
+        .await;
+
         cleanup_test_inquiries(&db, &email).await;
+
+        if let Err(err) = test_result {
+            if err.is_panic() {
+                std::panic::resume_unwind(err.into_panic());
+            }
+            panic!("test task failed: {err}");
+        }
     }
 
     #[tokio::test]
