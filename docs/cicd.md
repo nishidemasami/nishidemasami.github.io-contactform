@@ -14,13 +14,13 @@ GitHub Actions は `.github/workflows/` 配下で管理され、現在は **API 
 
 ## 実行契機
 
-| ワークフロー | 主なトリガー | 監視パス |
+| ワークフロー | 主なトリガー | 監視パス / 条件 |
 | --- | --- | --- |
-| API | `main` / `develop` への `push`・`pull_request`・`workflow_dispatch` | `.github/workflows/api_cicd.yaml`, `api/**` |
-| Cognito | `main` / `develop` への `push`・`pull_request`・`workflow_dispatch` | `.github/workflows/cognito_cicd.yaml`, `infrastructure/auth/**` |
-| DB | `main` / `develop` への `push`・`pull_request`・`workflow_dispatch` | `.github/workflows/db_migrate.yaml`, `infrastructure/liquibase_migrate/**` |
-| ドキュメント | `develop` への `push`・`pull_request`・`workflow_dispatch` | `.github/workflows/document_cicd.yaml`, `testpage/**` |
-| Wiki 更新 | `workflow_dispatch` | なし |
+| API | `develop` / `release` への `push`、`main` / `develop` / `release` 向け `pull_request`、`workflow_dispatch` | `.github/workflows/api_cicd.yaml`, `api/**` |
+| Cognito | `develop` / `release` への `push`、`main` / `develop` / `release` 向け `pull_request`、`workflow_dispatch` | `.github/workflows/cognito_cicd.yaml`, `infrastructure/auth/**` |
+| DB | `develop` / `release` への `push`、`main` / `develop` / `release` 向け `pull_request`、`workflow_dispatch` | `.github/workflows/db_migrate.yaml`, `infrastructure/liquibase_migrate/**` |
+| ドキュメント | `develop` への `push` / `pull_request`、`workflow_dispatch` | `.github/workflows/document_cicd.yaml`, `testpage/**` |
+| Wiki 更新 | `main` への `push`、`workflow_dispatch` | パスフィルタなし |
 
 `document_cicd.yaml` は `docs/**` を監視していないため、**Wiki だけを更新しても自動では再配信されません**。公開ドキュメントへ反映したい場合は `workflow_dispatch` などの別トリガーが必要です。
 
@@ -28,9 +28,9 @@ GitHub Actions は `.github/workflows/` 配下で管理され、現在は **API 
 
 `api_cicd.yaml` は 3 ジョブ構成です。
 
-1. `validate`: `sam validate --lint`、`cargo check`、`cargo test`
-2. `deploy`: `sam build` と `sam deploy` で Rust Lambda を含む API をデプロイ
-3. `export_openapi`: デプロイ済み API Gateway から `api/openapi.yaml` をエクスポートし、差分があればコミット
+1. `validate`: `sam validate --lint`、ローカル PostgreSQL 起動、Liquibase `--contexts=local`、`cargo check`、`cargo test -- --include-ignored`
+2. `deploy`: pull request 以外で `sam build` と `sam deploy` を実行
+3. `export_openapi`: デプロイ済み API Gateway から `api/openapi-${{ github.ref_name }}.yaml` をエクスポートし、差分があれば PR を作成
 
 API 側は [認証](auth.md) の Export を JWT Authorizer に、[データベース](db.md) の endpoint を Lambda 環境変数に使います。
 
@@ -41,7 +41,7 @@ API 側は [認証](auth.md) の Export を JWT Authorizer に、[データベ�
 1. `validate`: `sam validate --lint`
 2. `deploy`: pull request 以外で Cognito リソースを `sam deploy`
 
-`Stage=${{ github.ref_name }}` を渡すため、`develop` ブランチは develop 環境、`main` ブランチは main 環境に対応します。
+`Stage=${{ github.ref_name }}` を渡すため、push では `develop` / `release` を自動反映し、`main` は主に手動実行時にデプロイされます。
 
 ## DB デプロイとマイグレーション
 
@@ -49,8 +49,8 @@ API 側は [認証](auth.md) の Export を JWT Authorizer に、[データベ�
 
 1. `validate`: DB 用 SAM テンプレートを検証
 2. `deploy`: DSQL クラスターをデプロイし endpoint を取得
-3. `migrate`: Liquibase で `changelog.xml` を適用
-4. `generate`: `sea-orm-cli generate entity` で `infrastructure/sea_orm/src/entity` を更新し、差分があればコミット
+3. `migrate`: Liquibase で `changelog.xml` を `github.ref_name` コンテキスト付きで適用
+4. `generate`: `sea-orm-cli generate entity` で `infrastructure/sea_orm/src/entity` を更新し、差分があれば PR を作成
 
 `generate` ジョブでは Aurora DSQL の admin 認証トークンを URL エンコードして `DATABASE_URL` を組み立てています。
 
@@ -58,18 +58,18 @@ API 側は [認証](auth.md) の Export を JWT Authorizer に、[データベ�
 
 `document_cicd.yaml` は `develop` ブランチ向けのドキュメント配信フローです。主な処理は次の通りです。
 
-1. `testpage/` の依存関係をインストール
-2. TypeDoc で `testpage` の API ドキュメントを生成
-3. Storybook をビルド
-4. `docs/README.md` に外部リンクを追記して Honkit をビルド
-5. Cognito / API の CloudFormation Export を読んで Next.js を静的ビルド
+1. API 側で `cargo doc --no-deps` を実行
+2. `testpage/` で `npm ci`、`npm run lint`、TypeDoc 生成、Storybook ビルド、Next.js ビルドを実行
+3. 作業ツリー上の `docs/README.md` に外部リンクを追記して Honkit をビルド
+4. Cognito / API の CloudFormation Export を読んで `testpage` を本番用設定で静的ビルド
+5. OpenAPI をエクスポートし、Swagger UI を `_output/raw/openapi/` に生成
 6. `_output/` を Cloudflare Pages に配信
 
 このワークフローは、**ビルド時の作業ツリーで `docs/README.md` にリンクを追記してから Honkit を生成する** ため、コミット済みファイルと公開ページの表紙に一時的な差分が生じます。
 
 ## Wiki 更新フロー
 
-`update-wiki.yml` は手動実行専用で、`docs/AGENTS.md` を前提に Copilot CLI へ Wiki 更新を依頼します。変更があれば `docs/` をコミットし、新規ブランチを作成して `main` 向け Pull Request を作成します。
+`update-wiki.yml` は `main` への push または手動実行で動き、`docs/AGENTS.md` を前提に Copilot CLI へ Wiki 更新を依頼します。変更があれば `docs/` をコミットし、新規ブランチを作成して `main` 向け Pull Request を作成します。
 
 ## 依存関係
 
@@ -78,7 +78,7 @@ API 側は [認証](auth.md) の Export を JWT Authorizer に、[データベ�
 | Cognito デプロイ | API デプロイ / testpage ビルド | JWT Authorizer とフロントエンド設定値を提供 |
 | DB デプロイ | API デプロイ | Lambda が使う DSQL endpoint と DB スキーマを提供 |
 | API デプロイ | OpenAPI 出力 / testpage ビルド | API Gateway URL と API 定義の生成元 |
-| ドキュメント配信 | 公開ドキュメント | Honkit / Storybook / TypeDoc / testpage をまとめて公開 |
+| ドキュメント配信 | 公開ドキュメント | Honkit / Storybook / TypeDoc / testpage / Swagger UI をまとめて公開 |
 | Wiki 更新 | ドキュメント保守 | `docs/` の内容を継続的に同期 |
 
 ## 関連ページ
@@ -88,3 +88,4 @@ API 側は [認証](auth.md) の Export を JWT Authorizer に、[データベ�
 - [API](api.md)
 - [認証](auth.md)
 - [データベース](db.md)
+- [更新ログ](log.md)
