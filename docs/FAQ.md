@@ -3,6 +3,7 @@
 ## ブラウザから API Gateway、Lambda、Aurora DSQL への流れは？
 
 ```plantuml
+@startuml
 left to right direction
 skinparam backgroundColor transparent
 skinparam defaultFontname Meiryo
@@ -44,6 +45,13 @@ User --> "Cognito User Pool" : サインイン
 - `testpage/` は `NEXT_PUBLIC_USER_POOL_ID`、`NEXT_PUBLIC_USER_POOL_CLIENT_ID`、`NEXT_PUBLIC_API_ENDPOINT` を [CI/CD](cicd.md) で注入して静的ビルドされます。
 - DB への接続先は [データベース](db.md) の `DSQLClusterEndpoint` Export を使います。
 
+<<<<<<< develop
+Lambda --> DB : データの登録・更新
+"API Gateway" --> Cognito : 認証検証
+@enduml
+```
+=======
 ## スタック名の接頭辞が `snngicf` なのはなぜですか？
+>>>>>>> main
 
 `StackNamePrefix` の既定値が `snngicf` なのは、CloudFormation / AWS リソース名が長くなりすぎるのを避けるためです。元のリポジトリ名 `nishidemasami-github-io-contactform` を短縮した値で、[認証](auth.md)・[データベース](db.md)・[API](api.md) の各 SAM テンプレートで共通に使われています。

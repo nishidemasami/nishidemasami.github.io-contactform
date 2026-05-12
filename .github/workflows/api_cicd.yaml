@@ -3,8 +3,8 @@ name: CI/CD - API Deployment
 on:
   push:
     branches:
-      - main
       - develop
+      - release
     paths:
       - '.github/workflows/api_cicd.yaml'
       - 'api/**'
@@ -12,6 +12,7 @@ on:
     branches:
       - main
       - develop
+      - release
     paths:
       - '.github/workflows/api_cicd.yaml'
       - 'api/**'
@@ -35,7 +36,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.14'
 
       - name: Install SAM CLI
         run: |
@@ -44,6 +45,33 @@ jobs:
       - name: Validate SAM template
         run: |
           sam validate --template ${{ env.SAM_TEMPLATE }} --lint
+
+      - name: Start local PostgreSQL for Rust tests
+        run: |
+          docker run --name contactform-postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_DB=postgres \
+            -p 5432:5432 \
+            -d postgres:16.13
+          until docker exec contactform-postgres pg_isready -U postgres -d postgres; do
+            sleep 1
+          done
+
+      - name: Run Liquibase migrations for local test DB
+        run: |
+          docker run --rm \
+            -e LIQUIBASE_HUB_MODE=off \
+            --network host \
+            -v "${{ github.workspace }}:/workspace" \
+            liquibase/liquibase:4.33.0 \
+            --search-path=/workspace \
+            --changelog-file=infrastructure/liquibase_migrate/changelog.xml \
+            --contexts=local \
+            --url=jdbc:postgresql://localhost:5432/postgres \
+            --username=postgres \
+            --password=postgres \
+            update
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -60,7 +88,7 @@ jobs:
 
       - name: Run Rust tests
         working-directory: api/lambda
-        run: cargo test
+        run: cargo test -- --include-ignored
 
   deploy:
     name: Deploy API
@@ -166,13 +194,13 @@ jobs:
             --output-type YAML \
             --specification OAS30 \
             --stage-name '$default' \
-            api/openapi.yaml
+            api/openapi-${{ github.ref_name }}.yaml
 
       - name: Check for changes
         id: changes
         run: |
-          git add api/openapi.yaml
-          git diff --cached --quiet api/openapi.yaml \
+          git add api/openapi-${{ github.ref_name }}.yaml
+          git diff --cached --quiet api/openapi-${{ github.ref_name }}.yaml \
             || echo "changed=true" >> "$GITHUB_OUTPUT"
 
       - name: Commit and create pull request for OpenAPI definition

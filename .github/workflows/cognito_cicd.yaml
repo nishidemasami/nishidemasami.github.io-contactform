@@ -3,8 +3,8 @@ name: CI/CD - Cognito Deployment
 on:
   push:
     branches:
-      - main
       - develop
+      - release
     paths:
       - '.github/workflows/cognito_cicd.yaml'
       - "infrastructure/auth/**"
@@ -12,6 +12,7 @@ on:
     branches:
       - main
       - develop
+      - release
     paths:
       - '.github/workflows/cognito_cicd.yaml'
       - "infrastructure/auth/**"

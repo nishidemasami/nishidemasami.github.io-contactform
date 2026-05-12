@@ -13,7 +13,12 @@ pub struct Model {
     pub subject: String,
     #[sea_orm(column_type = "Text")]
     pub body: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub reply: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub respondent: Option<String>,
     pub created_at: DateTimeWithTimeZone,
+    pub reply_at: Option<DateTimeWithTimeZone>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -9,6 +9,7 @@ Parameters:
     AllowedValues:
       - develop
       - main
+      - release
   StackNamePrefix:
     Type: String
     Default: snngicf
@@ -21,13 +22,15 @@ Mappings:
       AllowOrigin: "https://ngicf-testpage.pages.dev"
     main:
       AllowOrigin: "https://nishidemasami.github.io"
+    release:
+      AllowOrigin: "https://nishidemasami.github.io"
 
 Resources:
   # Explicitly defined IAM Role for Lambda with a specific name
   SelectFunctionLambdaRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub select-function-lambda-role-${Stage}
+      RoleName: !Sub crudrole-lambda-role-${Stage}
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:

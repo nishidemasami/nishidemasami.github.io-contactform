@@ -87,7 +87,7 @@ jekyll-spaceship:
       include: []   # include patterns for math expressions checking (regexp)
       exclude: []   # exclude patterns for math expressions checking (regexp)
   plantuml-processor:
-    mode: default  # mode value 'pre-fetch' for fetching image at building stage
+    mode: pre-fetch  # mode value 'pre-fetch' for fetching image at building stage
     css:
       class: plantuml
     syntax:
@@ -95,7 +95,7 @@ jekyll-spaceship:
       custom: ['@startuml', '@enduml']
     src: https://www.plantuml.com/plantuml/svg/
   mermaid-processor:
-    mode: default  # mode value 'pre-fetch' for fetching image at building stage
+    mode: pre-fetch  # mode value 'pre-fetch' for fetching image at building stage
     css:
       class: mermaid
     syntax:

@@ -18,8 +18,79 @@ on:
 env:
   STACKNAME_PREFIX: snngicf
   AWS_REGION: ap-northeast-3
+  SAM_TEMPLATE: api/template.yaml
 
 jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install SAM CLI
+        run: |
+          pip install aws-sam-cli
+
+      - name: Validate SAM template
+        run: |
+          sam validate --template ${{ env.SAM_TEMPLATE }} --lint
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: api/lambda
+          cache-on-failure: true
+
+      - name: Generate API documentation
+        working-directory: api/lambda
+        run: cargo doc --no-deps
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: testpage/package-lock.json
+
+      - name: Install testpage dependencies
+        working-directory: testpage
+        run: npm ci
+
+      - name: Lint
+        working-directory: testpage
+        run: npm run lint
+
+      - name: Install TypeDoc
+        working-directory: testpage
+        run: npm install --save-dev typedoc
+
+      - name: Generate testpage documentation
+        working-directory: testpage
+        run: npx typedoc --out ../_output/raw/testpage --entryPointStrategy expand app components
+
+      - name: Build Storybook
+        working-directory: testpage
+        run: npm run build-storybook
+
+      - name: Build Next.js (with placeholder env vars)
+        working-directory: testpage
+        env:
+          NEXT_PUBLIC_USER_POOL_ID: placeholder
+          NEXT_PUBLIC_USER_POOL_CLIENT_ID: placeholder
+          NEXT_PUBLIC_API_ENDPOINT: https://placeholder.execute-api.ap-northeast-3.amazonaws.com
+        run: npm run build
+
   generate-api-docs:
     name: Generate API Lambda Documentation
     runs-on: ubuntu-latest
@@ -30,6 +101,8 @@ jobs:
       pull-requests: write
       repository-projects: write
       deployments: write
+    needs: validate
+    if: github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -134,15 +207,33 @@ jobs:
             --output text)
           echo "API_ENDPOINT=$API_ENDPOINT" >> $GITHUB_OUTPUT
 
+      - name: Get API ID from CloudFormation
+        id: api_outputs
+        run: |
+          API_ID=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACKNAME_PREFIX }}-api-${{ github.ref_name }} \
+            --query "Stacks[0].Outputs[?OutputKey=='HttpApiId'].OutputValue" \
+            --output text)
+          if [ -z "$API_ID" ] || [ "$API_ID" = "None" ]; then
+            echo "Error: CloudFormation output 'HttpApiId' is missing or not available for stack ${{ env.STACKNAME_PREFIX }}-api-${{ github.ref_name }}." >&2
+            exit 1
+          fi
+          echo "API_ID=$API_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Export OpenAPI definition
+        run: |
+          aws apigatewayv2 export-api \
+            --api-id ${{ steps.api_outputs.outputs.API_ID }} \
+            --output-type YAML \
+            --specification OAS30 \
+            --stage-name '$default' \
+            api/openapi-${{ github.ref_name }}.yaml
+
       - name: Generate SwaggerUI
         run: |
           mkdir -p _output/raw/openapi
-          cp api/openapi.yaml _output/raw/openapi/
-          echo '<!doctype html><html>  <head>    <meta charset="utf-8" />    <script src="./rapidoc-min.js"></script>  </head>  <body>    <rapi-doc      spec-url="./openapi.yaml"      render-style="focused"      show-header="false"      allow-authentication="true"      persist-auth="true"      theme="dark"    oauth2-client-id="${{ steps.cognito.outputs.CLIENT_ID }}"    oauth2-scope="openid email" oauth2-pkce="true">    </rapi-doc>  </body></html>' > _output/raw/openapi/index.html
-          curl -L https://unpkg.com/rapidoc@9.3.8/dist/rapidoc-min.js -o _output/raw/openapi/rapidoc-min.js
-          # npm install --prefix /tmp/swagger-ui-dist swagger-ui-dist@5.32.5
-          # SWAGGER_DIST=/tmp/swagger-ui-dist/node_modules/swagger-ui-dist
-          # cp -r "$SWAGGER_DIST"/* _output/raw/openapi/
+          cp api/openapi-${{ github.ref_name }}.yaml _output/raw/openapi/
+          echo '<!doctype html><meta charset="utf-8"><script src="https://unpkg.com/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script><script src="https://unpkg.com/rapidoc@9.3.8/dist/rapidoc-min.js"></script><body><rapi-doc style="visibility: visible" id="doc" spec-url="https://ngicf-testpage.pages.dev/raw/openapi/openapi-${{ github.ref_name }}.yaml" render-style="read" allow-try="true" allow-authentication="true" persist-auth="true" theme="dark" show-header="false" api-key-name="Authorization" api-key-location="header" api-key-value="eyJ..."><div slot="nav-logo"><h4>認証<div id="ninsho"><div><input id="email" placeholder="email"> <input id="password" type="password" placeholder="password"> <button onclick="login()">Login</button></div></div><h4>検索</h4></div></rapi-doc><script>const poolData={UserPoolId:"${{ steps.cognito.outputs.USER_POOL_ID }}",ClientId:"${{ steps.cognito.outputs.CLIENT_ID }}"},userPool=new AmazonCognitoIdentity.CognitoUserPool(poolData);function login(){const e=document.getElementById("email").value,o={Username:e,Password:document.getElementById("password").value},t=new AmazonCognitoIdentity.AuthenticationDetails(o),n={Username:e,Pool:userPool};new AmazonCognitoIdentity.CognitoUser(n).authenticateUser(t,{onSuccess:function(e){const o=e.getIdToken().getJwtToken();document.getElementById("doc").setAttribute("api-key-value",o),console.log("login success"),document.getElementById("doc").style.visibility="visible",document.getElementById("ninsho").style.display="none"},onFailure:function(e){console.error(e)}})}</script></body></html>' > _output/raw/openapi/index.html
 
       - name: Install dependencies
         working-directory: testpage

@@ -3,8 +3,8 @@ name: DB Migrate - DSQL Deployment
 on:
   push:
     branches:
-      - main
       - develop
+      - release
     paths:
       - '.github/workflows/db_migrate.yaml'
       - "infrastructure/liquibase_migrate/**"
@@ -12,6 +12,7 @@ on:
     branches:
       - main
       - develop
+      - release
     paths:
       - '.github/workflows/db_migrate.yaml'
       - "infrastructure/liquibase_migrate/**"
