@@ -1,0 +1,22 @@
+{
+    "title": "nishidemasami.github.io-contactform ドキュメント",
+    "description": "Documentation about nishidemasami.github.io-contactform",
+    "publisher": "NISHIDE, Masami",
+    "root": "./",
+    "plugins": [
+      "-intopic-toc",
+      "-highlight",
+      "-sharing",
+      "uml"
+    ],
+    "pdf" :{
+      "margin": {
+        "right": 40,
+        "left": 40 
+      }
+    },
+    "uml": {
+      "charset" : "UTF-8"
+    },
+    "language": "ja"
+}
