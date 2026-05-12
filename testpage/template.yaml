@@ -9,6 +9,7 @@ Parameters:
     AllowedValues:
       - develop
       - main
+      - release
 
 Resources:
   # S3 Bucket for static website hosting

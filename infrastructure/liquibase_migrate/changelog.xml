@@ -12,4 +12,5 @@
     <include file="changes/012_grant_selectview.sql" relativeToChangelogFile="true"/>
     <include file="changes/015_aws_iam_grant_select-function-lambda-role-develop.sql" relativeToChangelogFile="true"/>
     <include file="changes/016_aws_iam_grant_select-function-lambda-role-main.sql" relativeToChangelogFile="true"/>
+    <include file="changes/017_aws_iam_grant_select-function-lambda-role-release.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

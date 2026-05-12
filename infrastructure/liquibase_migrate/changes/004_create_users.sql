@@ -5,6 +5,7 @@
 -- Create users table
 CREATE TABLE users (
     id UUID PRIMARY KEY,
+    cognito_sub UUID NOT NULL,
     email VARCHAR(255) NOT NULL,
     username TEXT NOT NULL,
     hashed_password TEXT NOT NULL,

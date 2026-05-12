@@ -9,6 +9,7 @@ Parameters:
     AllowedValues:
       - develop
       - main
+      - release
   StackNamePrefix:
     Type: String
     Default: snngicf

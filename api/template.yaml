@@ -9,6 +9,7 @@ Parameters:
     AllowedValues:
       - develop
       - main
+      - release
   StackNamePrefix:
     Type: String
     Default: snngicf
@@ -20,6 +21,8 @@ Mappings:
     develop:
       AllowOrigin: "https://ngicf-testpage.pages.dev"
     main:
+      AllowOrigin: "https://nishidemasami.github.io"
+    release:
       AllowOrigin: "https://nishidemasami.github.io"
 
 Resources:

@@ -3,6 +3,7 @@
 ## ブラウザからAPI Gateway、Lambda、DSQLへの流れは？
 
 ```plantuml
+@startuml
 left to right direction
 skinparam backgroundColor transparent 
 skinparam defaultFontname Meiryo
@@ -39,6 +40,7 @@ User --> "API Gateway" : APIリクエスト
 
 Lambda --> DB : データの登録・更新
 "API Gateway" --> Cognito : 認証検証
+@enduml
 ```
 
 ## スタック名の接頭辞は、なぜ `snngicf` というわかりにくい名前なのですか？
