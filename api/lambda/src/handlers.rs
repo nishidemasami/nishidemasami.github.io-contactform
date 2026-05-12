@@ -2,8 +2,8 @@ use crate::models::{
     CreateInquiryRequest, CreateInquiryResponse, Inquiry, InquiryListResponse, Response,
 };
 use lambda_runtime::Error;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, DbBackend, FromQueryResult, Set, Statement};
-use sea_orm_entities::entity::inquiries;
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbBackend, EntityTrait, FromQueryResult, QueryFilter, QueryOrder, Set, Statement};
+use sea_orm_entities::entity::inquiries::{self, Column, Entity as Inquiries};
 
 pub(crate) async fn handle_get_inquiries(
     db: &DatabaseConnection,
@@ -13,17 +13,17 @@ pub(crate) async fn handle_get_inquiries(
 ) -> Result<Response, Error> {
     tracing::info!("Querying inquiries for email: {}", email);
 
-    let inquiries: Vec<Inquiry> = Inquiry::find_by_statement(Statement::from_sql_and_values(
-        DbBackend::Postgres,
-        "SELECT id, cognito_sub, email, subject, body, created_at FROM inquiries WHERE email = $1 AND cognito_sub = $2 ORDER BY created_at DESC",
-        [email.to_owned().into(), cognito_sub.into()],
-    ))
-    .all(db)
-    .await
-    .map_err(|e| {
-        tracing::error!("Database query failed: {}", e);
-        anyhow::anyhow!("Database query failed: {}", e)
-    })?;
+    let inquiries: Vec<Inquiry> = Inquiries::find()
+        .filter(Column::Email.eq(email))
+        .filter(Column::CognitoSub.eq(cognito_sub))
+        .order_by_desc(Column::CreatedAt)
+        .all(db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database query failed: {}", e);
+            anyhow::anyhow!("Database query failed: {}", e)
+        })?
+        .into_iter().map(Inquiry::from).collect();
 
     let response_body = InquiryListResponse {
         email: email.to_string(),
@@ -62,6 +62,9 @@ pub(crate) async fn handle_post_inquiry(
         subject: Set(create_request.subject.clone()),
         body: Set(create_request.body.clone()),
         created_at: Set(now),
+        reply: Set(None),
+        respondent: Set(None),
+        reply_at: Set(None),
     };
 
     new_inquiry.insert(db).await.map_err(|e| {
