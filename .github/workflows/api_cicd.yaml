@@ -53,7 +53,7 @@ jobs:
             -e POSTGRES_USER=postgres \
             -e POSTGRES_DB=postgres \
             -p 5432:5432 \
-            -d postgres:17
+            -d postgres:16.13
           until docker exec contactform-postgres pg_isready -U postgres -d postgres; do
             sleep 1
           done
