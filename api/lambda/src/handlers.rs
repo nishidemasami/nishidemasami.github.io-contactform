@@ -2,7 +2,7 @@ use crate::models::{
     CreateInquiryRequest, CreateInquiryResponse, Inquiry, InquiryListResponse, Response,
 };
 use lambda_runtime::Error;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbBackend, EntityTrait, FromQueryResult, QueryFilter, QueryOrder, Set, Statement};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set};
 use sea_orm_entities::entity::inquiries::{self, Column, Entity as Inquiries};
 
 pub(crate) async fn handle_get_inquiries(
