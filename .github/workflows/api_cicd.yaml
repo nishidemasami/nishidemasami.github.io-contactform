@@ -87,7 +87,7 @@ jobs:
 
       - name: Run Rust tests
         working-directory: api/lambda
-        run: cargo test -- --ignored
+        run: cargo test -- --include-ignored
 
   deploy:
     name: Deploy API
