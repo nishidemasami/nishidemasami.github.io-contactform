@@ -100,6 +100,8 @@ jobs:
       pull-requests: write
       repository-projects: write
       deployments: write
+    needs: validate
+    if: github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
