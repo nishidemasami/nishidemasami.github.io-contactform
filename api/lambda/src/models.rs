@@ -108,8 +108,8 @@ impl Response {
         Self::new(
             status_code,
             json!({
-                "error": error,
-                "message": message
+                "error": message,
+                "message": error
             }),
             cors_origin,
         )
