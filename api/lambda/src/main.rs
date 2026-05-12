@@ -76,7 +76,7 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error
     };
 
     // SeaORMデータベース接続を作成する
-    let db = create_db("selectview", &dsql_endpoint, &dsql_region).await?;
+    let db = create_db("crudrole", &dsql_endpoint, &dsql_region).await?;
 
     let result = match event.request_context.http.method.as_str() {
         "GET" => handle_get_inquiries(&db, email, cognito_sub, &cors_origin).await,
