@@ -65,6 +65,7 @@ jobs:
             -v "${{ github.workspace }}:/workspace" \
             liquibase/liquibase:4.33.0 \
             --search-path=/workspace \
+            --hub-mode=off update \
             --changelog-file=infrastructure/liquibase_migrate/changelog.xml \
             --contexts=local \
             --url=jdbc:postgresql://localhost:5432/postgres \
