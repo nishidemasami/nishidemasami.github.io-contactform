@@ -6,7 +6,11 @@ fn build_connection_string(role: &str, endpoint: &str, region: &str) -> String {
     format!("postgres://{role}@{endpoint}/postgres?region={region}")
 }
 
-pub(crate) async fn create_db(role: &str, endpoint: &str, region: &str) -> Result<DatabaseConnection, Error> {
+pub(crate) async fn create_db(
+    role: &str,
+    endpoint: &str,
+    region: &str,
+) -> Result<DatabaseConnection, Error> {
     tracing::info!("Creating database connection with Aurora DSQL SQLx connector...");
     let connection_string = build_connection_string(role, endpoint, region);
     let pool = pool::connect(&connection_string)
