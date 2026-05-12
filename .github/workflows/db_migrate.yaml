@@ -3,7 +3,6 @@ name: DB Migrate - DSQL Deployment
 on:
   push:
     branches:
-      - main
       - develop
       - release
     paths:

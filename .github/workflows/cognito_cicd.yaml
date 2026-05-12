@@ -3,7 +3,6 @@ name: CI/CD - Cognito Deployment
 on:
   push:
     branches:
-      - main
       - develop
       - release
     paths:
