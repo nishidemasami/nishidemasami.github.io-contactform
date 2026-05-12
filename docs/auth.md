@@ -6,23 +6,22 @@
 
 - テンプレート: [`../infrastructure/auth/template.yaml`](../infrastructure/auth/template.yaml)
 - 補足 README: [`../infrastructure/auth/README.md`](../infrastructure/auth/README.md)
-- デプロイ: [CI/CD](cicd.md)
+- 関連デプロイ: [CI/CD](cicd.md)
 
 ## デプロイ対象
 
 | リソース | 役割 | 命名規則 |
 | --- | --- | --- |
 | `CognitoUserPool` | ユーザー管理本体 | `${StackNamePrefix}-user-pool-${Stage}` |
-| `CognitoUserPoolClient` | API / フロントエンドが使うアプリクライアント | `${StackNamePrefix}-app-client-${Stage}` |
+| `CognitoUserPoolClient` | API / testpage が使うアプリクライアント | `${StackNamePrefix}-app-client-${Stage}` |
 
-`StackNamePrefix` の既定値は `snngicf`です。これは、各リソースの名前が長すぎる場合にエラーとなる場合があるためです。
-`Stage` の規定値は `develop` または `main` です。
+`StackNamePrefix` の既定値は `snngicf`、`Stage` の既定値は `develop` です。許可値はいずれも `develop` / `main` に限定されています。
 
 ## User Pool 設定
 
 - メールアドレスを自動検証します。
 - ユーザー名属性としてメールアドレスを使います。
-- Hosted UI や外部 IdP の設定は、現在のテンプレートには含まれていません。
+- Hosted UI、独自ドメイン、外部 IdP の設定は含まれていません。
 
 | 項目 | 値 |
 | --- | --- |
@@ -39,24 +38,36 @@
 - `GenerateSecret: false`
 - `PreventUserExistenceErrors: ENABLED`
 
-現状のテンプレートでは、API Gateway JWT Authorizer から利用する前提のシンプルな App Client 構成になっています。
+現在のテンプレートは、[API](api.md) の JWT Authorizer と `testpage/` の Amplify 設定で使う、シンプルな App Client を用意する構成です。
 
 ## CloudFormation Outputs
 
-| Output | 用途 | API からの利用 |
+| Output | Export 名 | 主な利用先 |
 | --- | --- | --- |
-| `CognitoUserPoolId` | User Pool ID の参照 | フロントエンド設定や運用参照用 |
-| `CognitoUserPoolClientId` | App Client ID の参照 | API Gateway の JWT Audience |
-| `CognitoIssuer` | JWT Issuer URL | API Gateway の JWT Issuer |
+| `CognitoUserPoolId` | `${StackNamePrefix}-auth-${Stage}-CognitoUserPoolId` | `testpage` ビルド時の `NEXT_PUBLIC_USER_POOL_ID` |
+| `CognitoUserPoolClientId` | `${StackNamePrefix}-auth-${Stage}-CognitoUserPoolClientId` | API Gateway JWT Audience、`NEXT_PUBLIC_USER_POOL_CLIENT_ID` |
+| `CognitoIssuer` | `${StackNamePrefix}-auth-${Stage}-CognitoIssuer` | API Gateway JWT Issuer |
 
-これらは `${StackNamePrefix}-auth-${Stage}-...` 形式で Export され、[API](api.md) の SAM テンプレートから `Fn::ImportValue` で参照されます。
+`document_cicd.yaml` はこれらの Export を `aws cloudformation list-exports` で取得し、`testpage` の静的ビルドに注入します。
 
 ## ブランチとステージ
 
-`cognito_cicd.yaml` は `main` / `develop` ブランチの push・pull request・手動実行に対応しています。デプロイ時は `github.ref_name` をそのまま `Stage` に渡すため、ブランチ運用と Cognito 環境名が一致します。
+`cognito_cicd.yaml` は `main` / `develop` ブランチの `push`・`pull_request`・`workflow_dispatch` に対応しています。ただし実際にデプロイするのは pull request 以外で、`github.ref_name` をそのまま `Stage` に渡します。
+
+| ブランチ | 検証 | デプロイ |
+| --- | --- | --- |
+| `develop` | あり | あり |
+| `main` | あり | あり |
+| Pull Request | あり | なし |
+
+## API / フロントエンドとの接続
+
+- [API](api.md) は `Fn::ImportValue` で `CognitoIssuer` と `CognitoUserPoolClientId` を読み込み、HTTP API の既定 Authorizer に設定します。
+- `testpage/components/AmplifyProvider.tsx` は User Pool ID と Client ID を受け取り、AWS Amplify の Cognito 設定に使います。
+- 認証済み画面では `fetchAuthSession()` から取得した ID トークンを `Authorization: Bearer ...` として API に渡します。
 
 ## 関連ページ
 
+- [FAQ](FAQ.md)
 - [API](api.md)
-- [データベース](db.md)
 - [CI/CD](cicd.md)
