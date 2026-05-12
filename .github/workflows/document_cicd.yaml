@@ -20,6 +20,76 @@ env:
   AWS_REGION: ap-northeast-3
 
 jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install SAM CLI
+        run: |
+          pip install aws-sam-cli
+
+      - name: Validate SAM template
+        run: |
+          sam validate --template ${{ env.SAM_TEMPLATE }} --lint
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: api/lambda
+          cache-on-failure: true
+
+      - name: Generate API documentation
+        working-directory: api/lambda
+        run: cargo doc --no-deps
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: testpage/package-lock.json
+
+      - name: Install testpage dependencies
+        working-directory: testpage
+        run: npm ci
+
+      - name: Lint
+        working-directory: testpage
+        run: npm run lint
+
+      - name: Install TypeDoc
+        working-directory: testpage
+        run: npm install --save-dev typedoc
+
+      - name: Generate testpage documentation
+        working-directory: testpage
+        run: npx typedoc --out ../_output/raw/testpage --entryPointStrategy expand app components
+
+      - name: Build Storybook
+        working-directory: testpage
+        run: npm run build-storybook
+
+      - name: Build Next.js (with placeholder env vars)
+        working-directory: testpage
+        env:
+          NEXT_PUBLIC_USER_POOL_ID: placeholder
+          NEXT_PUBLIC_USER_POOL_CLIENT_ID: placeholder
+          NEXT_PUBLIC_API_ENDPOINT: https://placeholder.execute-api.ap-northeast-3.amazonaws.com
+        run: npm run build
+
   generate-api-docs:
     name: Generate API Lambda Documentation
     runs-on: ubuntu-latest
