@@ -9,5 +9,8 @@ CREATE TABLE inquiries (
     email VARCHAR(255) NOT NULL,
     subject TEXT NOT NULL,
     body TEXT NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+    reply TEXT,
+    respondent TEXT,
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reply_at timestamptz
 );

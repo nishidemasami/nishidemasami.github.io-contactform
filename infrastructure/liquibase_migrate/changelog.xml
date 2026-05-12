@@ -7,9 +7,15 @@
     <include file="changes/003_create_idx_inquiries_created_at.sql" relativeToChangelogFile="true"/>
     <include file="changes/004_create_users.sql" relativeToChangelogFile="true"/>
     <include file="changes/005_create_role_selectview.sql" relativeToChangelogFile="true"/>
+    <include file="changes/006_create_role_crudrole.sql" relativeToChangelogFile="true"/>
     <include file="changes/009_create_get_inquiries_by_email.sql" relativeToChangelogFile="true"/>
     <include file="changes/010_grant_function_selectview.sql" relativeToChangelogFile="true"/>
+    <include file="changes/011_grant_crudrole.sql" relativeToChangelogFile="true"/>
     <include file="changes/012_grant_selectview.sql" relativeToChangelogFile="true"/>
     <include file="changes/015_aws_iam_grant_select-function-lambda-role-develop.sql" relativeToChangelogFile="true"/>
     <include file="changes/016_aws_iam_grant_select-function-lambda-role-main.sql" relativeToChangelogFile="true"/>
+    <include file="changes/017_aws_iam_grant_select-function-lambda-role-release.sql" relativeToChangelogFile="true"/>
+    <include file="changes/018_aws_iam_grant_crudrole-lambda-role-develop.sql" relativeToChangelogFile="true"/>
+    <include file="changes/019_aws_iam_grant_crudrole-lambda-role-main.sql" relativeToChangelogFile="true"/>
+    <include file="changes/020_aws_iam_grant_crudrole-lambda-role-release.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

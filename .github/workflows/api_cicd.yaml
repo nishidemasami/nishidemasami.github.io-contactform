@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - release
     paths:
       - '.github/workflows/api_cicd.yaml'
       - 'api/**'
@@ -12,6 +13,7 @@ on:
     branches:
       - main
       - develop
+      - release
     paths:
       - '.github/workflows/api_cicd.yaml'
       - 'api/**'
@@ -35,7 +37,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.14'
 
       - name: Install SAM CLI
         run: |
@@ -166,13 +168,13 @@ jobs:
             --output-type YAML \
             --specification OAS30 \
             --stage-name '$default' \
-            api/openapi.yaml
+            api/openapi-${{ github.ref_name }}.yaml
 
       - name: Check for changes
         id: changes
         run: |
-          git add api/openapi.yaml
-          git diff --cached --quiet api/openapi.yaml \
+          git add api/openapi-${{ github.ref_name }}.yaml
+          git diff --cached --quiet api/openapi-${{ github.ref_name }}.yaml \
             || echo "changed=true" >> "$GITHUB_OUTPUT"
 
       - name: Commit and create pull request for OpenAPI definition
