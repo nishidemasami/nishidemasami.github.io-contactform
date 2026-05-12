@@ -96,8 +96,10 @@ pub(crate) async fn handle_post_inquiry(
 mod tests {
     use super::*;
     use chrono::Duration;
-    use sea_orm::{ActiveModelTrait, Database, EntityTrait, Set};
-    use sea_orm_entities::entity::inquiries::Entity as Inquiries;
+    use sea_orm::{ActiveModelTrait, ColumnTrait, Database, EntityTrait, QueryFilter, Set};
+    use sea_orm_entities::entity::inquiries::{Column, Entity as Inquiries};
+
+    const ORDERING_OFFSET_SECS: i64 = 1;
 
     async fn connect_local_test_db() -> DatabaseConnection {
         let database_url = std::env::var("LOCAL_TEST_DATABASE_URL").unwrap_or_else(|_| {
@@ -108,6 +110,14 @@ mod tests {
             .expect("Failed to connect local PostgreSQL test DB")
     }
 
+    async fn cleanup_test_inquiries(db: &DatabaseConnection, email: &str) {
+        Inquiries::delete_many()
+            .filter(Column::Email.eq(email))
+            .exec(db)
+            .await
+            .expect("test inquiry cleanup should succeed");
+    }
+
     #[tokio::test]
     #[ignore = "ローカルのDBが必要なためデフォルトでは実行しない"]
     async fn test_handle_post_inquiry_with_local_postgres() {
@@ -115,6 +125,7 @@ mod tests {
         let email = format!("local-post-{}@example.com", uuid::Uuid::now_v7());
         let cognito_sub = uuid::Uuid::now_v7();
         let body = r#"{"subject":"subject from test","body":"body from test"}"#;
+        cleanup_test_inquiries(&db, &email).await;
 
         let response = handle_post_inquiry(&db, &email, cognito_sub, body, "https://example.com")
             .await
@@ -140,6 +151,7 @@ mod tests {
             .expect("inserted inquiry should exist");
         assert_eq!(saved.email, email);
         assert_eq!(saved.cognito_sub, cognito_sub);
+        cleanup_test_inquiries(&db, &email).await;
     }
 
     #[tokio::test]
@@ -149,6 +161,7 @@ mod tests {
         let cognito_sub = uuid::Uuid::now_v7();
         let email = format!("local-get-{}@example.com", uuid::Uuid::now_v7());
         let now = chrono::Utc::now().fixed_offset();
+        cleanup_test_inquiries(&db, &email).await;
 
         inquiries::ActiveModel {
             id: Set(uuid::Uuid::now_v7()),
@@ -158,7 +171,7 @@ mod tests {
             body: Set("older body".to_string()),
             reply: Set(None),
             respondent: Set(None),
-            created_at: Set(now - Duration::seconds(1)),
+            created_at: Set(now - Duration::seconds(ORDERING_OFFSET_SECS)),
             reply_at: Set(None),
         }
         .insert(&db)
@@ -195,5 +208,6 @@ mod tests {
         assert_eq!(inquiries.len(), 2);
         assert_eq!(inquiries[0]["subject"], "newer subject");
         assert_eq!(inquiries[1]["subject"], "older subject");
+        cleanup_test_inquiries(&db, &email).await;
     }
 }
