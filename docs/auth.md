@@ -2,7 +2,7 @@
 
 ## 概要
 
-認証基盤は `infrastructure/auth/template.yaml` の AWS SAM テンプレートで管理され、Amazon Cognito の **User Pool** と **User Pool Client** を `develop` / `main` 環境ごとにデプロイします。
+認証基盤は `infrastructure/auth/template.yaml` の AWS SAM テンプレートで管理され、Amazon Cognito の **User Pool** と **User Pool Client** を `develop` / `main` / `release` 環境向けに定義します。
 
 - テンプレート: [`../infrastructure/auth/template.yaml`](../infrastructure/auth/template.yaml)
 - 補足 README: [`../infrastructure/auth/README.md`](../infrastructure/auth/README.md)
@@ -15,7 +15,7 @@
 | `CognitoUserPool` | ユーザー管理本体 | `${StackNamePrefix}-user-pool-${Stage}` |
 | `CognitoUserPoolClient` | API / testpage が使うアプリクライアント | `${StackNamePrefix}-app-client-${Stage}` |
 
-`StackNamePrefix` の既定値は `snngicf`、`Stage` の既定値は `develop` です。許可値はいずれも `develop` / `main` に限定されています。
+`StackNamePrefix` の既定値は `snngicf`、`Stage` の既定値は `develop` です。テンプレートが許可する Stage は `develop` / `main` / `release` です。
 
 ## User Pool 設定
 
@@ -48,17 +48,19 @@
 | `CognitoUserPoolClientId` | `${StackNamePrefix}-auth-${Stage}-CognitoUserPoolClientId` | API Gateway JWT Audience、`NEXT_PUBLIC_USER_POOL_CLIENT_ID` |
 | `CognitoIssuer` | `${StackNamePrefix}-auth-${Stage}-CognitoIssuer` | API Gateway JWT Issuer |
 
-`document_cicd.yaml` はこれらの Export を `aws cloudformation list-exports` で取得し、`testpage` の静的ビルドに注入します。
+`document_cicd.yaml` はこれらの Export を `aws cloudformation list-exports` で取得し、`testpage` の静的ビルドと Swagger UI 用の認証設定に注入します。
 
 ## ブランチとステージ
 
-`cognito_cicd.yaml` は `main` / `develop` ブランチの `push`・`pull_request`・`workflow_dispatch` に対応しています。ただし実際にデプロイするのは pull request 以外で、`github.ref_name` をそのまま `Stage` に渡します。
+`cognito_cicd.yaml` は `develop` / `release` への push、`main` / `develop` / `release` 向け pull request、`workflow_dispatch` に対応しています。`sam deploy` が走るのは pull request 以外なので、`main` 環境は主に手動実行で更新する想定です。
 
-| ブランチ | 検証 | デプロイ |
+| 実行契機 | 検証 | デプロイ |
 | --- | --- | --- |
-| `develop` | あり | あり |
-| `main` | あり | あり |
-| Pull Request | あり | なし |
+| `develop` / `release` への push | あり | あり |
+| `main` / `develop` / `release` 向け pull request | あり | なし |
+| `workflow_dispatch` | あり | あり |
+
+デプロイ時は `github.ref_name` をそのまま `Stage` に渡します。
 
 ## API / フロントエンドとの接続
 
