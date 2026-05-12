@@ -61,11 +61,11 @@ jobs:
       - name: Run Liquibase migrations for local test DB
         run: |
           docker run --rm \
+            -e LIQUIBASE_HUB_MODE=off \
             --network host \
             -v "${{ github.workspace }}:/workspace" \
             liquibase/liquibase:4.33.0 \
             --search-path=/workspace \
-            --hub-mode=off \
             --changelog-file=infrastructure/liquibase_migrate/changelog.xml \
             --contexts=local \
             --url=jdbc:postgresql://localhost:5432/postgres \
