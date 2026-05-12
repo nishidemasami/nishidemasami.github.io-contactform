@@ -17,13 +17,13 @@ pub(crate) async fn handle_get_inquiries(
         .filter(Column::Email.eq(email))
         .filter(Column::CognitoSub.eq(cognito_sub))
         .order_by_desc(Column::CreatedAt)
+        .into_model::<Inquiry>()
         .all(db)
         .await
         .map_err(|e| {
             tracing::error!("Database query failed: {}", e);
             anyhow::anyhow!("Database query failed: {}", e)
-        })?
-        .into_iter().map(Inquiry::from).collect();
+        })?;
 
     let response_body = InquiryListResponse {
         email: email.to_string(),
