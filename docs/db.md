@@ -15,7 +15,7 @@
 | 項目 | 内容 |
 | --- | --- |
 | リソース | `AWS::DSQL::Cluster` |
-| Stage | `develop`, `main` |
+| Stage | `develop`, `main`, `release` |
 | 主な Outputs | `DSQLClusterIdentifier`, `DSQLClusterEndpoint` |
 | Export 名 | `${StackNamePrefix}-db-${Stage}-DSQLClusterIdentifier`, `${StackNamePrefix}-db-${Stage}-DSQLClusterEndpoint` |
 
@@ -27,8 +27,8 @@
 
 | テーブル | 主なカラム | 用途 |
 | --- | --- | --- |
-| `inquiries` | `id`, `cognito_sub`, `email`, `subject`, `body`, `created_at` | 問い合わせ保存 |
-| `users` | `id`, `email`, `username`, `hashed_password`, `created_at` | ユーザー情報保存 |
+| `inquiries` | `id`, `cognito_sub`, `email`, `subject`, `body`, `reply`, `respondent`, `created_at`, `reply_at` | 問い合わせ保存と返信管理 |
+| `users` | `id`, `cognito_sub`, `email`, `username`, `hashed_password`, `created_at` | ユーザー情報保存 |
 
 ### インデックス
 
@@ -42,12 +42,12 @@
 | 要素 | 内容 |
 | --- | --- |
 | 関数 | `get_inquiries_by_email(p_email VARCHAR(255))` |
-| DB ロール | `selectview WITH LOGIN` |
-| テーブル権限 | `public` スキーマの全テーブルへ `SELECT, INSERT, UPDATE` |
-| 関数権限 | `get_inquiries_by_email` への `EXECUTE` |
-| IAM 連携 | `select-function-lambda-role-develop` / `select-function-lambda-role-main` に `selectview` を付与 |
+| DB ロール | `selectview WITH LOGIN`, `crudrole WITH LOGIN` |
+| `selectview` 権限 | `public.inquiries` への `SELECT`、`get_inquiries_by_email` への `EXECUTE` |
+| `crudrole` 権限 | `public.inquiries` への `SELECT, INSERT, UPDATE, DELETE` |
+| IAM 連携 | `select-function-lambda-role-*` と `crudrole-lambda-role-*` への `AWS IAM GRANT` |
 
-現在の API 実装は `selectview` ロールで DSQL に接続し、`inquiries` テーブルへ直接 `SELECT` / `INSERT` を実行します。`get_inquiries_by_email` 関数は DB 側にありますが、Rust ハンドラーからは呼ばれていません。
+現在の API 実装は `crudrole` ロールで DSQL に接続し、`inquiries` テーブルへ直接 `SELECT` / `INSERT` を実行します。`get_inquiries_by_email` 関数と `selectview` ロールは DB 側に残っていますが、現行の Lambda テンプレートからは使われていません。
 
 ## Liquibase 変更セット一覧
 
@@ -58,36 +58,37 @@
 | 003 | `003_create_idx_inquiries_created_at.sql` | `created_at` インデックス追加 |
 | 004 | `004_create_users.sql` | `users` テーブル作成 |
 | 005 | `005_create_role_selectview.sql` | `selectview` ロール作成 |
+| 006 | `006_create_role_crudrole.sql` | `crudrole` ロール作成 |
 | 009 | `009_create_get_inquiries_by_email.sql` | メールアドレス検索関数作成 |
-| 010 | `010_grant_function_selectview.sql` | 関数実行権限付与 |
-| 012 | `012_grant_selectview.sql` | テーブル権限付与 |
-| 015 | `015_aws_iam_grant_select-function-lambda-role-develop.sql` | IAM ロールへ DB ロール付与（develop） |
-| 016 | `016_aws_iam_grant_select-function-lambda-role-main.sql` | IAM ロールへ DB ロール付与（main） |
+| 010 | `010_grant_function_selectview.sql` | `selectview` へ関数実行権限付与 |
+| 011 | `011_grant_crudrole.sql` | `crudrole` へ `inquiries` の CRUD 権限付与 |
+| 012 | `012_grant_selectview.sql` | `selectview` へ `inquiries` の SELECT 権限付与 |
+| 015 | `015_aws_iam_grant_select-function-lambda-role-develop.sql` | `selectview` を develop IAM ロールへ付与 |
+| 016 | `016_aws_iam_grant_select-function-lambda-role-main.sql` | `selectview` を main IAM ロールへ付与 |
+| 017 | `017_aws_iam_grant_select-function-lambda-role-release.sql` | `selectview` を release IAM ロールへ付与 |
+| 018 | `018_aws_iam_grant_crudrole-lambda-role-develop.sql` | `crudrole` を develop IAM ロールへ付与 |
+| 019 | `019_aws_iam_grant_crudrole-lambda-role-main.sql` | `crudrole` を main IAM ロールへ付与 |
+| 020 | `020_aws_iam_grant_crudrole-lambda-role-release.sql` | `crudrole` を release IAM ロールへ付与 |
 
-`changelog.xml` に含まれる変更セットは上記です。`006`〜`008`、`011`、`013`、`014` は現在のリポジトリに存在しません。
+`changelog.xml` に含まれる変更セットは上記です。`007`、`008`、`013`、`014` は現在のリポジトリに存在しません。
 
 ## コンテキスト
 
-- `main` / `develop`: Aurora DSQL 向けの `CREATE INDEX ASYNC` と `AWS IAM GRANT` を含む変更を実行します。
-- `local`: 通常の PostgreSQL で実行できる `CREATE INDEX` のみを使い、Aurora DSQL 専用構文を避けます。
+- `develop` / `main` / `release`: Aurora DSQL 向けの `CREATE INDEX ASYNC` と `AWS IAM GRANT` を含む変更を実行します。
+- `local`: 通常の PostgreSQL で実行できる `CREATE INDEX` のみを使い、Aurora DSQL 専用構文を避けます。API の CI 検証ではこの `local` コンテキストを使います。
 
 ローカル開発手順は [`../infrastructure/liquibase_migrate/README.md`](../infrastructure/liquibase_migrate/README.md) にあります。
 
 ## SeaORM 連携
 
-`db_migrate.yaml` の `generate` ジョブは `sea-orm-cli generate entity` を実行し、`infrastructure/sea_orm/src/entity/` を更新します。現在のリポジトリには少なくとも次の生成物があります。
-
-- `inquiries.rs`
-- `users.rs`
-- `mod.rs`
-- `prelude.rs`
+`db_migrate.yaml` の `generate` ジョブは `sea-orm-cli generate entity` を実行し、`infrastructure/sea_orm/src/entity/` を更新します。`inquiries.rs` でも `reply` / `respondent` / `reply_at` を含む現在のテーブル定義が反映されています。
 
 Wiki 側では、**Liquibase 変更セットと SeaORM 生成物が CI で同期される構成**として扱うのが現在の実態です。
 
 ## API との接続
 
 - [API](api.md) は `${StackNamePrefix}-db-${Stage}-DSQLClusterEndpoint` を `Fn::ImportValue` で受け取り、`DSQL_ENDPOINT` 環境変数に設定します。
-- Lambda は `create_db("selectview", endpoint, region)` で接続し、JWT の `email` と `sub` を条件に `inquiries` を読み書きします。
+- Lambda は `create_db("crudrole", endpoint, region)` で接続し、JWT の `email` と `sub` を条件に `inquiries` を読み書きします。
 - DB 権限は IAM ロール付与と DB ロール権限付与の両方で成立します。
 
 ## 関連ページ

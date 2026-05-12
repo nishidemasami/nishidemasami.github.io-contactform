@@ -20,9 +20,10 @@ API は `api/template.yaml` と `api/lambda/` で管理されています。AWS 
 | Lambda Runtime | `provided.al2023` |
 | アーキテクチャ | `arm64` |
 | メモリ / タイムアウト | `128 MB` / `30 秒` |
-| 実行ロール | `select-function-lambda-role-${Stage}` |
+| Lambda IAM ロール | `crudrole-lambda-role-${Stage}` |
+| Stage | `develop`, `main`, `release` |
 
-Lambda の IAM ロールには `dsql:DbConnect` 権限があり、DB 側では [データベース](db.md) の `selectview` ロール付与で実アクセスを成立させます。
+Lambda の IAM ロールには `dsql:DbConnect` 権限があり、実行時は `create_db("crudrole", endpoint, region)` で Aurora DSQL に接続します。読み書き権限の詳細は [データベース](db.md) を参照してください。
 
 ## 公開エンドポイント
 
@@ -33,7 +34,7 @@ Lambda の IAM ロールには `dsql:DbConnect` 権限があり、DB 側では [
 | `GET` | `/inquiries` | 必須 | JWT の `email` と `sub` を使い、自分の問い合わせ一覧を `created_at DESC` で返します。 |
 | `POST` | `/inquiries` | 必須 | JWT の `email` と `sub` を使い、新しい問い合わせを `inquiries` テーブルへ登録します。 |
 
-`PUT` / `DELETE` などのルートは定義されておらず、Lambda 側は未対応メソッドに `405 Method Not Allowed` を返します。
+テンプレートの CORS 設定には `PUT` / `DELETE` / `OPTIONS` も含まれますが、Lambda にイベントが定義されているのは `GET` と `POST` だけです。Lambda 側も未対応メソッドに `405 Method Not Allowed` を返します。
 
 ## 認証と CORS
 
@@ -53,6 +54,7 @@ CORS は SAM テンプレートの `StageCorsMap` で切り替えています。
 | --- | --- |
 | `develop` | `https://ngicf-testpage.pages.dev` |
 | `main` | `https://nishidemasami.github.io` |
+| `release` | `https://nishidemasami.github.io` |
 
 Lambda のレスポンスでも `Access-Control-Allow-Origin` と `Content-Type: application/json` を明示的に返します。
 
@@ -68,7 +70,7 @@ Lambda のレスポンスでも `Access-Control-Allow-Origin` と `Content-Type:
 | `count` | 取得件数 |
 | `inquiries` | `id`, `cognito_sub`, `email`, `subject`, `body`, `created_at` の配列 |
 
-検索条件は `email` と `cognito_sub` の両方です。DB には `get_inquiries_by_email` 関数もありますが、現在の Rust 実装は生 SQL で `inquiries` テーブルを直接参照しています。
+検索条件は `email` と `cognito_sub` の両方です。DB には `get_inquiries_by_email` 関数もありますが、現在の Rust 実装は SeaORM で `inquiries` テーブルを直接参照しています。
 
 ### `POST /inquiries`
 
@@ -81,7 +83,7 @@ Lambda のレスポンスでも `Access-Control-Allow-Origin` と `Content-Type:
 }
 ```
 
-成功時は `201 Created` を返し、保存した 1 件を `inquiry` フィールドに包みます。`id` は UUID v7、`created_at` は Lambda 実行時刻です。
+成功時は `201 Created` を返し、保存した 1 件を `inquiry` フィールドに包みます。`id` は UUID v7、`created_at` は Lambda 実行時刻です。DB には `reply` / `respondent` / `reply_at` カラムもありますが、現行の API レスポンスには含めていません。
 
 ## 実行時設定
 
@@ -91,7 +93,7 @@ Lambda のレスポンスでも `Access-Control-Allow-Origin` と `Content-Type:
 | `DSQL_REGION` | DSQL 接続リージョン | SAM テンプレート固定値 `ap-northeast-3` |
 | `CORS_ORIGIN` | `Access-Control-Allow-Origin` | `StageCorsMap` |
 
-Rust 側は `create_db("selectview", endpoint, region)` で接続文字列を組み立て、Aurora DSQL SQLx connector 経由で SeaORM 接続を作成します。
+Rust 側は `create_db("crudrole", endpoint, region)` で接続文字列を組み立て、Aurora DSQL SQLx connector 経由で SeaORM 接続を作成します。
 
 ## エラー動作
 
@@ -107,20 +109,20 @@ SAM テンプレートは次の Outputs を公開します。
 
 | Output | 用途 |
 | --- | --- |
-| `HttpApiUrl` | `https://${HttpApi}.execute-api.ap-northeast-3.amazonaws.com` を Export し、`testpage` ビルドなどで参照します。 |
-| `HttpApiId` | OpenAPI エクスポート時に API ID を取得するために使います。 |
+| `HttpApiUrl` | `https://${HttpApi}.execute-api.ap-northeast-3.amazonaws.com` を出力し、Export 名 `${AWS::StackName}-HttpApiUrl-${Stage}` で配布します。 |
+| `HttpApiId` | API ID を出力し、OpenAPI エクスポート時に使います。Export 名は `${AWS::StackName}-HttpApiId-${Stage}` です。 |
 
 主な依存関係は次の通りです。
 
 | 依存先 | API 側で使うもの | 参照 |
 | --- | --- | --- |
 | 認証 | Cognito Issuer / User Pool Client ID | [認証](auth.md) |
-| DB | `inquiries` テーブル、`selectview` ロール、`DSQLClusterEndpoint` | [データベース](db.md) |
-| CI/CD | `cargo check` / `cargo test`、SAM デプロイ、OpenAPI エクスポート | [CI/CD](cicd.md) |
+| DB | `inquiries` テーブル、`crudrole`、`DSQLClusterEndpoint` | [データベース](db.md) |
+| CI/CD | `cargo check`、ローカル PostgreSQL + Liquibase による Rust テスト、SAM デプロイ、OpenAPI エクスポート | [CI/CD](cicd.md) |
 
 ## OpenAPI について
 
-`api_cicd.yaml` の `export_openapi` ジョブは、デプロイ済み API Gateway から `api/openapi.yaml` をエクスポートして差分があればコミットします。つまり OpenAPI は手書きではなく、**デプロイ後の API Gateway 定義を CI が取り込む** フローです。
+`api_cicd.yaml` の `export_openapi` ジョブは、デプロイ済み API Gateway から `api/openapi-${branch}.yaml` をエクスポートし、差分があれば Pull Request を作成します。つまり OpenAPI は手書きではなく、**デプロイ後の API Gateway 定義を CI がブランチ別ファイルへ取り込む** フローです。
 
 ## 関連ページ
 
