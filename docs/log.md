@@ -2,6 +2,12 @@
 
 このページは、Wiki の更新内容を時系列で残すためのログです。新しい更新を上に追記します。
 
+## [2026-05-13] lint | 品質担保・GitFlow・クラウド方針の追記
+
+- `docs/README.md` に品質担保（OpenAPI SSoT / Liquibase / Rust の安全性とテスト）、GitFlow（`copilot/** -> develop -> main -> release`）、AWS 方針（Managed / Scalable / Scale to Zero）、llm-wiki 運用方針の要点を追加しました。
+- `docs/cicd.md` に品質担保メカニズムと GitHub PR ベースの人間レビューを含む GitFlow の説明を追記しました。
+- `docs/FAQ.md` に AWS のマネージド / スケーラブル / Scale to Zero をこのリポジトリ構成でどう実現しているかの説明を追加し、関連ページとの導線を更新しました。
+
 ## [2026-05-12] lint | Wiki 全体の同期
 
 - `docs/FAQ.md` に残っていた競合マーカーを除去し、構成図と共通 FAQ を整理しました。
