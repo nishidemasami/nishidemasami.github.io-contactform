@@ -53,7 +53,6 @@ Resources:
   HttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
-      Name: !Sub ${AWS::StackName}-http-api-${Stage}
       CorsConfiguration:
 
         AllowOrigins: 
@@ -72,6 +71,9 @@ Resources:
 
       DefinitionBody:
         openapi: 3.0.1
+        info:
+          title: Inquiry API
+          version: 1.0
         paths:
           /inquiries:
             post:
