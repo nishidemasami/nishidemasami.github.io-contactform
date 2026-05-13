@@ -1,6 +1,6 @@
 openapi: "3.0.1"
 info:
-  title: "snngicf-api-develop-http-api-develop"
+  title: "Inquiry API"
   version: "1.0"
 servers:
 - url: "https://v3bc42brtj.execute-api.ap-northeast-3.amazonaws.com/{basePath}"
