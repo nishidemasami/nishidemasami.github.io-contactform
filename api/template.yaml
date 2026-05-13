@@ -53,7 +53,6 @@ Resources:
   HttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
-      Name: !Sub ${AWS::StackName}-http-api-${Stage}
       CorsConfiguration:
 
         AllowOrigins: 
@@ -69,6 +68,33 @@ Resources:
           - Content-Type
           - Authorization
         AllowCredentials: false
+
+      DefinitionBody:
+        openapi: 3.0.1
+        info:
+          title: Inquiry API
+          version: 1.0
+        paths:
+          /inquiries:
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      properties:
+                        subject:
+                          type: string
+                        body:
+                          type: string
+                      required:
+                        - subject
+                        - body
+              responses:
+                '200':
+                  description: OK
+
       Auth:
         Authorizers:
           CognitoAuthorizer:

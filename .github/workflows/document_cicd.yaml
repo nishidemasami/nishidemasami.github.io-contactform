@@ -52,6 +52,15 @@ jobs:
           workspaces: api/lambda
           cache-on-failure: true
 
+      - name: Validate OpenAPI generation
+        working-directory: api/lambda
+        env:
+          OPENAPI_OUTPUT: /tmp/openapi-validate.yaml
+          API_ENDPOINT: https://placeholder.execute-api.ap-northeast-3.amazonaws.com
+          USER_POOL_ID: ap-northeast-3_placeholder
+          CLIENT_ID: placeholder
+        run: cargo run --features openapi --bin generate-openapi
+
       - name: Generate API documentation
         working-directory: api/lambda
         run: cargo doc --no-deps
@@ -82,6 +91,10 @@ jobs:
       - name: Build Storybook
         working-directory: testpage
         run: npm run build-storybook
+
+      - name: Generate SVG from PlantUML files
+        working-directory: docs/plantuml
+        run: sh conv_from_puml_into_svg.sh
 
       - name: Build Next.js (with placeholder env vars)
         working-directory: testpage
@@ -155,13 +168,21 @@ jobs:
           mkdir -p _output/raw/storybook
           cp -r testpage/storybook-static/* _output/raw/storybook/
 
+      - name: Generate SVG from PlantUML files
+        working-directory: docs/plantuml
+        run: sh conv_from_puml_into_svg.sh
+
       - name: Generate wiki pages
         working-directory: docs
         run: |
-          echo "" >> README.md
-          echo "## リンク" >> README.md
           echo '- <a href="/testpage/" target="_blank">テストページ</a>' >> README.md
-          echo '- <a href="/raw/openapi/" target="_blank">API ドキュメント（OpenAPI）</a>' >> README.md
+          echo '- <a href="/raw/rapidoc/" target="_blank">API ドキュメント（RapiDoc）</a>' >> README.md
+          echo '- <a href="/raw/openapi-explorer/" target="_blank">API ドキュメント（OpenAPI Explorer）</a>' >> README.md
+          echo '- <a href="/raw/swagger-editor/" target="_blank">API ドキュメント（Swagger Editor）</a>' >> README.md
+          echo '- <a href="/raw/scalar/" target="_blank">API ドキュメント（Scalar）</a>' >> README.md
+          echo '- <a href="/raw/redoc/" target="_blank">API ドキュメント（Redoc）</a>' >> README.md
+          echo '- <a href="/raw/stoplight/" target="_blank">API ドキュメント（Stoplight）</a>' >> README.md
+          echo '- <a href="/raw/swaggerui/" target="_blank">API ドキュメント（SwaggerUI）</a>' >> README.md
           echo '- <a href="/raw/api/api_handler/index.html" target="_blank">バックエンドAPI ドキュメント（Rustdoc）</a>' >> README.md
           echo '- <a href="/raw/storybook/" target="_blank">テストページ ドキュメント（Storybook）</a>' >> README.md
           echo '- <a href="/raw/testpage/" target="_blank">テストページ ドキュメント（TypeDoc）</a>' >> README.md
@@ -207,33 +228,129 @@ jobs:
             --output text)
           echo "API_ENDPOINT=$API_ENDPOINT" >> $GITHUB_OUTPUT
 
-      - name: Get API ID from CloudFormation
-        id: api_outputs
-        run: |
-          API_ID=$(aws cloudformation describe-stacks \
-            --stack-name ${{ env.STACKNAME_PREFIX }}-api-${{ github.ref_name }} \
-            --query "Stacks[0].Outputs[?OutputKey=='HttpApiId'].OutputValue" \
-            --output text)
-          if [ -z "$API_ID" ] || [ "$API_ID" = "None" ]; then
-            echo "Error: CloudFormation output 'HttpApiId' is missing or not available for stack ${{ env.STACKNAME_PREFIX }}-api-${{ github.ref_name }}." >&2
-            exit 1
-          fi
-          echo "API_ID=$API_ID" >> "$GITHUB_OUTPUT"
+      - name: Generate OpenAPI definition
+        working-directory: api/lambda
+        env:
+          OPENAPI_OUTPUT: ../openapi-${{ github.ref_name }}.yaml
+          API_ENDPOINT: ${{ steps.cognito.outputs.API_ENDPOINT }}
+          USER_POOL_ID: ${{ steps.cognito.outputs.USER_POOL_ID }}
+          CLIENT_ID: ${{ steps.cognito.outputs.CLIENT_ID }}
+        run: cargo run --features openapi --bin generate-openapi
 
-      - name: Export OpenAPI definition
+      - name: Generate OpenAPI Explorer
         run: |
-          aws apigatewayv2 export-api \
-            --api-id ${{ steps.api_outputs.outputs.API_ID }} \
-            --output-type YAML \
-            --specification OAS30 \
-            --stage-name '$default' \
-            api/openapi-${{ github.ref_name }}.yaml
+          mkdir -p _output/raw/openapi-explorer
+          cp api/openapi-${{ github.ref_name }}.yaml _output/raw/openapi-explorer/
+          cat <<'EOF' > _output/raw/openapi-explorer/index.html
+          <!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8"/>
+              <script src="https://unpkg.com/openapi-explorer/dist/browser/openapi-explorer.min.js"></script>
+            </head>
+            <body>
+              <openapi-explorer
+                spec-url="./openapi-${{ github.ref_name }}.yaml">
+              </openapi-explorer>
+            </body>
+          </html>
+          EOF
+
+      - name: Generate Swagger Editor
+        run: |
+          mkdir -p _output/raw/swagger-editor
+          cp api/openapi-${{ github.ref_name }}.yaml _output/raw/swagger-editor/
+          cat <<'EOF' > _output/raw/swagger-editor/index.html
+          <!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8"/>
+              <link rel="stylesheet" href="https://unpkg.com/swagger-editor-dist/swagger-editor.css" />
+            </head>
+            <body>
+              <div id="swagger-editor"></div>
+              <script src="https://unpkg.com/swagger-editor-dist/swagger-editor-bundle.js"></script>
+              <script>
+                window.onload = () => {
+                  SwaggerEditorBundle({
+                    url: './openapi-${{ github.ref_name }}.yaml',
+                    dom_id: '#swagger-editor'
+                  })
+                }
+              </script>
+            </body>
+          </html>
+          EOF
+
+      - name: Generate Scalar
+        run: |
+          mkdir -p _output/raw/scalar
+          cp api/openapi-${{ github.ref_name }}.yaml _output/raw/scalar/
+          cat <<'EOF' > _output/raw/scalar/index.html
+          <!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8" />
+              <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+            </head>
+
+            <body>
+              <!-- 先にDOMを置く -->
+              <div id="app"></div>
+
+              <!-- 後で初期化 -->
+              <script>
+                window.addEventListener('DOMContentLoaded', () => {
+                  Scalar.createApiReference('#app', {
+                    url: 'https://ngicf-testpage.pages.dev/raw/rapidoc/openapi-${{ github.ref_name }}.yaml'
+                  })
+                })
+              </script>
+            </body>
+          </html>
+          EOF
+
+      - name: Generate Redoc
+        run: |
+          npx redoc-cli bundle \
+            api/openapi-${{ github.ref_name }}.yaml \
+            -o _output/raw/redoc/index.html
+
+      - name: Generate Stoplight Elements
+        run: |
+          mkdir -p _output/raw/stoplight
+          cp api/openapi-${{ github.ref_name }}.yaml _output/raw/stoplight/
+          cat <<'EOF' > _output/raw/stoplight/index.html
+          <!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8"/>
+              <script src="https://unpkg.com/@stoplight/elements/web-components.min.js"></script>
+              <link rel="stylesheet" href="https://unpkg.com/@stoplight/elements/styles.min.css">
+            </head>
+            <body>
+              <elements-api
+                apiDescriptionUrl="./openapi-${{ github.ref_name }}.yaml"
+                router="hash"
+              />
+            </body>
+          </html>
+          EOF
 
       - name: Generate SwaggerUI
         run: |
-          mkdir -p _output/raw/openapi
-          cp api/openapi-${{ github.ref_name }}.yaml _output/raw/openapi/
-          echo '<!doctype html><meta charset="utf-8"><script src="https://unpkg.com/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script><script src="https://unpkg.com/rapidoc@9.3.8/dist/rapidoc-min.js"></script><body><rapi-doc style="visibility: visible" id="doc" spec-url="https://ngicf-testpage.pages.dev/raw/openapi/openapi-${{ github.ref_name }}.yaml" render-style="read" allow-try="true" allow-authentication="true" persist-auth="true" theme="dark" show-header="false" api-key-name="Authorization" api-key-location="header" api-key-value="eyJ..."><div slot="nav-logo"><h4>認証<div id="ninsho"><div><input id="email" placeholder="email"> <input id="password" type="password" placeholder="password"> <button onclick="login()">Login</button></div></div><h4>検索</h4></div></rapi-doc><script>const poolData={UserPoolId:"${{ steps.cognito.outputs.USER_POOL_ID }}",ClientId:"${{ steps.cognito.outputs.CLIENT_ID }}"},userPool=new AmazonCognitoIdentity.CognitoUserPool(poolData);function login(){const e=document.getElementById("email").value,o={Username:e,Password:document.getElementById("password").value},t=new AmazonCognitoIdentity.AuthenticationDetails(o),n={Username:e,Pool:userPool};new AmazonCognitoIdentity.CognitoUser(n).authenticateUser(t,{onSuccess:function(e){const o=e.getIdToken().getJwtToken();document.getElementById("doc").setAttribute("api-key-value",o),console.log("login success"),document.getElementById("doc").style.visibility="visible",document.getElementById("ninsho").style.display="none"},onFailure:function(e){console.error(e)}})}</script></body></html>' > _output/raw/openapi/index.html
+          mkdir -p _output/raw/swaggerui
+          cp api/openapi-${{ github.ref_name }}.yaml _output/raw/swaggerui/
+          npm install --prefix /tmp/swagger-ui-dist swagger-ui-dist@5.32.5
+          SWAGGER_DIST=/tmp/swagger-ui-dist/node_modules/swagger-ui-dist
+          cp -r "$SWAGGER_DIST"/* _output/raw/swaggerui/
+          sed -i 's|https://petstore.swagger.io/v2/swagger.json|./openapi-${{ github.ref_name }}.yaml|g' _output/raw/swaggerui/swagger-initializer.js
+          
+      - name: Generate RapiDoc HTML
+        run: |
+          mkdir -p _output/raw/rapidoc
+          cp api/openapi-${{ github.ref_name }}.yaml _output/raw/rapidoc/
+          echo '<!doctype html><meta charset="utf-8"><script src="https://unpkg.com/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script><script src="https://unpkg.com/rapidoc@9.3.8/dist/rapidoc-min.js"></script><body><rapi-doc style="visibility: visible" id="doc" spec-url="https://ngicf-testpage.pages.dev/raw/rapidoc/openapi-${{ github.ref_name }}.yaml" render-style="read" allow-try="true" allow-authentication="true" persist-auth="true" theme="dark" show-header="false" api-key-name="Authorization" api-key-location="header" api-key-value="eyJ..."><div slot="nav-logo"><h4>認証<div id="ninsho"><div><input id="email" placeholder="email"> <input id="password" type="password" placeholder="password"> <button onclick="login()">Login</button></div></div><h4>検索</h4></div></rapi-doc><script>const poolData={UserPoolId:"${{ steps.cognito.outputs.USER_POOL_ID }}",ClientId:"${{ steps.cognito.outputs.CLIENT_ID }}"},userPool=new AmazonCognitoIdentity.CognitoUserPool(poolData);function login(){const e=document.getElementById("email").value,o={Username:e,Password:document.getElementById("password").value},t=new AmazonCognitoIdentity.AuthenticationDetails(o),n={Username:e,Pool:userPool};new AmazonCognitoIdentity.CognitoUser(n).authenticateUser(t,{onSuccess:function(e){const o=e.getIdToken().getJwtToken();document.getElementById("doc").setAttribute("api-key-value",o),console.log("login success"),document.getElementById("doc").style.visibility="visible",document.getElementById("ninsho").style.display="none"},onFailure:function(e){console.error(e)}})}</script></body></html>' > _output/raw/rapidoc/index.html
 
       - name: Install dependencies
         working-directory: testpage
