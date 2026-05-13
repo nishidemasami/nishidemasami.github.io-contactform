@@ -165,7 +165,7 @@ jobs:
       - name: Generate SVG from PlantUML files
         run: |
           docker run --rm \
-            -v "$(pwd)/docs:/data" \
+            -v "$(pwd)/docs/plantuml:/data" \
             plantuml/plantuml \
             -tsvg -r /data
 
