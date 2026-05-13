@@ -71,6 +71,18 @@ API 側は [認証](auth.md) の Export を JWT Authorizer に、[データベ�
 
 `update-wiki.yml` は `main` への push または手動実行で動き、`docs/AGENTS.md` を前提に Copilot CLI へ Wiki 更新を依頼します。変更があれば `docs/` をコミットし、新規ブランチを作成して `main` 向け Pull Request を作成します。
 
+## 品質担保の仕組み
+
+- **OpenAPI を Rust で SSoT 化**: `api/lambda` の `generate-openapi` バイナリは `utoipa` で定義された API 情報を OpenAPI に出力します。`api_cicd.yaml` と `document_cicd.yaml` の `validate` ジョブが `cargo run --features openapi --bin generate-openapi` を実行し、実装と定義の乖離を早期検出します。
+- **Liquibase で環境差異を抑制**: API 検証ではローカル PostgreSQL を起動し、`infrastructure/liquibase_migrate/changelog.xml` を `--contexts=local` で適用してから Rust テストを実行します。開発環境と CI の両方で同じ変更セットを通すため、DB 差異を最小化できます。
+- **Rust の品質特性を活用**: API 実装は `cargo check` / `cargo test` に加え、`proptest` のプロパティベーステストを含みます。静的解析（`clippy`）の活用方針と、Rust 言語仕様のメモリ安全・NULL 安全・型安全を土台に品質を担保します。
+
+## GitFlow と人間レビュー
+
+- AI は `copilot/**` ブランチで作業し、`develop` 向け Pull Request を作成します。
+- レビュアーは GitHub 上で CI/CD の結果（検証ジョブ・デプロイ条件）を確認しながら効率的にレビューします。
+- その後は `develop -> main -> release` の順で Pull Request を運用し、`main` を陳腐化させず、AI / 開発者の双方が「開発対象」と「保守対象」を明確に認識できる状態を維持します。
+
 ## 依存関係
 
 | 上流 | 下流 | 意味 |

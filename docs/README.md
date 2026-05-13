@@ -39,6 +39,13 @@
 - GitHub Actions を追加・変更したら [CI/CD](cicd.md) だけでなく、この表紙、[SUMMARY.md](SUMMARY.md)、必要なら [FAQ](FAQ.md) も更新します。
 - `document_cicd.yaml` は `docs/**` を監視していないため、**Wiki だけを更新しても公開ドキュメントは自動再配信されません**。公開ページへの反映は `workflow_dispatch` か `testpage/**` / ワークフローファイル変更時の実行に依存します。
 
+## 品質担保・開発運用の要点
+
+- **品質担保**: [CI/CD](cicd.md) で `cargo run --features openapi --bin generate-openapi` を検証し、Rust（`utoipa`）を OpenAPI の SSoT として扱います。DB は [データベース](db.md) の Liquibase 変更セットを CI の local PostgreSQL でも適用して環境差異を抑制します。Rust 側は `proptest` によるプロパティベーステスト、`cargo clippy` による静的解析、言語仕様に基づくメモリ安全 / NULL 安全 / 型安全を前提に品質を担保します。
+- **GitFlow とレビュー**: AI は `copilot/**` ブランチで変更を作成し `develop` へ PR を出し、人間レビューで CI/CD 結果を確認します。その後 `develop -> main -> release` の PR フローで開発線と保守線を明確に保ちます。詳細は [CI/CD](cicd.md) を参照してください。
+- **AWS の活用方針**: 24/365 保守が重い EC2 などを避け、Lambda / Aurora DSQL などのマネージド・スケーラブルな従量課金サービスを中心に構成することで、Scale to Zero を含むクラウドの恩恵を最大化します（[API](api.md), [データベース](db.md)）。
+- **llm-wiki 運用**: [AGENTS](AGENTS.md) をスキーマとして `docs/` を AI が読みやすい構造で継続更新し、索引（このページ / [SUMMARY](SUMMARY.md)）と相互参照を維持します。
+
 ## リンク
 
 - <a href="https://github.com/nishidemasami/nishidemasami.github.io-contactform" target="_blank">GitHubリポジトリ</a>
