@@ -47,6 +47,7 @@ struct ErrorResponse {
 #[utoipa::path(
     get,
     path = "/inquiries",
+    tag = "inquiries",
     responses(
         (status = 200, description = "Get inquiries", body = InquiryListResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
@@ -62,6 +63,7 @@ fn get_inquiries() {}
 #[utoipa::path(
     post,
     path = "/inquiries",
+    tag = "inquiries",
     request_body = CreateInquiryRequest,
     responses(
         (status = 201, description = "Create inquiry", body = CreateInquiryResponse),
