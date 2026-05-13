@@ -1,6 +1,6 @@
 # FAQ
 
-## ブラウザから API Gateway、Lambda、Aurora DSQL への流れは？
+## テスト環境のブラウザから API Gateway、Lambda、Aurora DSQL への流れは？
 
 ![図１](plantuml/1.svg)
 

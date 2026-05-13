@@ -3,7 +3,9 @@ skinparam backgroundColor transparent
 skinparam defaultFontname Meiryo
 skinparam componentStyle rectangle
 
-actor 利用者 as User
+title テスト環境のブラウザから API Gateway、Lambda、Aurora DSQL への流れ
+
+actor "利用者(ブラウザ)" as User
 
 package "テスト用フロントエンド" {
   [Cloudflare Pages]
@@ -22,9 +24,9 @@ package "バックエンド" {
 
 User --> "Cloudflare Pages" : HTTPS
 "Cloudflare Pages" --> "testpage\n(Next.js static export)" : 静的配信
-"testpage\n(Next.js static export)" --> "Cognito User Pool" : Amplify Auth
-"testpage\n(Next.js static export)" --> "API Gateway v2" : Bearer JWT 付き GET/POST /inquiries
+"testpage\n(Next.js static export)" --> "Cognito User Pool" : Amplify Auth\n(USER_SRP_AUTH)
+"testpage\n(Next.js static export)" --> "API Gateway v2" : Bearer JWT 付きの\n GET/POST /inquiries
 "API Gateway v2" --> "Cognito User Pool" : JWT 検証
 "API Gateway v2" --> "Rust Lambda" : ルーティング
-"Rust Lambda" --> "Aurora DSQL" : crudrole ロールで SELECT / INSERT
+"Rust Lambda" --> "Aurora DSQL" : crudrole ロールで\n SELECT / INSERT
 @enduml
