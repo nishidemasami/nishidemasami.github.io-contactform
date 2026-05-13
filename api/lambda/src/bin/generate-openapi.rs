@@ -179,6 +179,13 @@ fn apply_cognito_security(
     value
 }
 
+fn apply_metadata(mut openapi: Value) -> Value {
+    openapi["info"]["title"] = json!("Contact Form API");
+    openapi["info"]["description"] = json!("API for contact form inquiries.");
+    openapi["info"]["license"] = json!({ "name": "Proprietary" });
+    openapi
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let output = output_path();
     if let Some(parent) = output.parent() {
@@ -187,6 +194,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let openapi = build_openapi(api_endpoint());
     let openapi = apply_cognito_security(openapi, cognito_issuer(), cognito_client_id());
+    let openapi = apply_metadata(openapi);
     let yaml = serde_yaml::to_string(&openapi)?;
     fs::write(&output, yaml)?;
 
@@ -229,5 +237,18 @@ mod tests {
                 ["jwtConfiguration"]["audience"][0],
             "client-id"
         );
+    }
+
+    #[test]
+    fn metadata_is_applied() {
+        let openapi = build_openapi("https://example.com".to_string());
+        let openapi = apply_cognito_security(openapi, None, None);
+        let openapi = apply_metadata(openapi);
+        assert_eq!(openapi["info"]["title"], "Contact Form API");
+        assert_eq!(
+            openapi["info"]["description"],
+            "API for contact form inquiries."
+        );
+        assert_eq!(openapi["info"]["license"]["name"], "Proprietary");
     }
 }

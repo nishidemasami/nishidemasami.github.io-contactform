@@ -77,14 +77,14 @@ components:
         identitySource: $request.header.Authorization
         jwtConfiguration:
           audience:
-          - exampleclientid
-          issuer: https://cognito-idp.ap-northeast-3.amazonaws.com/ap-northeast-3_example
+          - 10e3ku62o0cm6n1gt2h65s1u9t
+          issuer: https://cognito-idp.ap-northeast-3.amazonaws.com/ap-northeast-3_kZfu7imK2
         type: jwt
 info:
-  description: ''
+  description: API for contact form inquiries.
   license:
-    name: ''
-  title: api_handler
+    name: Proprietary
+  title: Contact Form API
   version: 0.1.0
 openapi: 3.1.0
 paths:
@@ -144,4 +144,4 @@ paths:
       - CognitoAuthorizer: []
       tags: []
 servers:
-- url: https://example.execute-api.ap-northeast-3.amazonaws.com
+- url: https://v3bc42brtj.execute-api.ap-northeast-3.amazonaws.com
