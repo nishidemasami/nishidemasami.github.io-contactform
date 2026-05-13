@@ -294,16 +294,22 @@ jobs:
           <!doctype html>
           <html>
             <head>
-              <meta charset="utf-8"/>
+              <meta charset="utf-8" />
               <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
             </head>
+
             <body>
+              <!-- 先にDOMを置く -->
+              <div id="app"></div>
+
+              <!-- 後で初期化 -->
               <script>
-                Scalar.createApiReference('#app', {
-                  url: './openapi-${{ github.ref_name }}.yaml',
+                window.addEventListener('DOMContentLoaded', () => {
+                  Scalar.createApiReference('#app', {
+                    url: 'https://ngicf-testpage.pages.dev/raw/rapidoc/openapi-${{ github.ref_name }}.yaml'
+                  })
                 })
               </script>
-              <div id="app"></div>
             </body>
           </html>
           EOF

@@ -16,11 +16,11 @@
 
 | 領域 | 現在の状態 | 主なソース |
 | --- | --- | --- |
-| API | `api/template.yaml` と `api/lambda/` で、Cognito JWT Authorizer 付き HTTP API と Rust Lambda を管理しています。Lambda は `crudrole` で Aurora DSQL に接続し、`/inquiries` の GET / POST を処理します。 | [`../api/template.yaml`](../api/template.yaml), [`../api/lambda/src/`](../api/lambda/src/) |
-| 認証 | `infrastructure/auth/template.yaml` で Cognito User Pool / User Pool Client を `develop` / `main` / `release` 向けに定義しています。 | [`../infrastructure/auth/template.yaml`](../infrastructure/auth/template.yaml) |
-| データベース | `infrastructure/liquibase_migrate/` で Aurora DSQL クラスター、Liquibase 変更セット、IAM ロール連携を管理し、CI で SeaORM エンティティを再生成します。 | [`../infrastructure/liquibase_migrate/`](../infrastructure/liquibase_migrate/), [`../infrastructure/sea_orm/src/entity/`](../infrastructure/sea_orm/src/entity/) |
-| CI/CD | GitHub Actions で API / 認証 / DB / ドキュメント配信 / Wiki 更新を自動化しています。自動デプロイの主対象は `develop` / `release` で、`main` は主に PR 検証または手動実行で扱います。 | [`../.github/workflows/`](../.github/workflows/) |
-| フロント検証 | `testpage/` の静的 Next.js アプリが Cognito と API をつなぐ検証 UI を提供し、Cloudflare Pages に配信されます。 | [`../testpage/`](../testpage/) |
+| API | `api/template.yaml` と `api/lambda/` で、Cognito JWT Authorizer 付き HTTP API と Rust Lambda を管理しています。Lambda は `crudrole` で Aurora DSQL に接続し、`/inquiries` の GET / POST を処理します。 | [`api/template.yaml`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/api/template.yaml), [`api/lambda/src/`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/api/lambda/src/) |
+| 認証 | `infrastructure/auth/template.yaml` で Cognito User Pool / User Pool Client を `develop` / `main` / `release` 向けに定義しています。 | [`infrastructure/auth/template.yaml`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/infrastructure/auth/template.yaml) |
+| データベース | `infrastructure/liquibase_migrate/` で Aurora DSQL クラスター、Liquibase 変更セット、IAM ロール連携を管理し、CI で SeaORM エンティティを再生成します。 | [`infrastructure/liquibase_migrate/`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/infrastructure/liquibase_migrate/), [`infrastructure/sea_orm/src/entity/`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/infrastructure/sea_orm/src/entity/) |
+| CI/CD | GitHub Actions で API / 認証 / DB / ドキュメント配信 / Wiki 更新を自動化しています。自動デプロイの主対象は `develop` / `release` で、`main` は主に PR 検証または手動実行で扱います。 | [`.github/workflows/`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/.github/workflows/) |
+| フロント検証 | `testpage/` の静的 Next.js アプリが Cognito と API をつなぐ検証 UI を提供し、Cloudflare Pages に配信されます。 | [`testpage/`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/testpage/) |
 
 ## ページ案内
 
