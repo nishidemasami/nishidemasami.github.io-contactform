@@ -172,8 +172,6 @@ jobs:
       - name: Generate wiki pages
         working-directory: docs
         run: |
-          echo "" >> README.md
-          echo "## リンク" >> README.md
           echo '- <a href="/testpage/" target="_blank">テストページ</a>' >> README.md
           echo '- <a href="/raw/openapi/" target="_blank">API ドキュメント（OpenAPI）</a>' >> README.md
           echo '- <a href="/raw/api/api_handler/index.html" target="_blank">バックエンドAPI ドキュメント（Rustdoc）</a>' >> README.md

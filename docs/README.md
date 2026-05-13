@@ -38,3 +38,10 @@
 - DB スキーマ、権限、Export 名が変わったら [データベース](db.md) と [API](api.md) の依存説明を同期します。
 - GitHub Actions を追加・変更したら [CI/CD](cicd.md) だけでなく、この表紙、[SUMMARY.md](SUMMARY.md)、必要なら [FAQ](FAQ.md) も更新します。
 - `document_cicd.yaml` は `docs/**` を監視していないため、**Wiki だけを更新しても公開ドキュメントは自動再配信されません**。公開ページへの反映は `workflow_dispatch` か `testpage/**` / ワークフローファイル変更時の実行に依存します。
+
+## リンク
+
+- <a href="https://github.com/nishidemasami/nishidemasami.github.io-contactform" target="_blank">GitHubリポジトリ</a>
+- <a href="https://ngicf-testpage.pages.dev/" target="_blank">開発者向けドキュメントページ</a>
+- <a href="https://nishidemasami.github.io/nishidemasami.github.io-contactform/" target="_blank">利用者向けドキュメントページ</a>
+<!-- この行以降は自動でリンクが挿入されるので、編集や追記をしないでください。 -->
