@@ -56,6 +56,12 @@ impl Modify for SecurityAddon {
 
 #[derive(OpenApi)]
 #[openapi(
+    info(
+        title = "Contact Form API",
+        description = "API for contact form inquiries.",
+        version = "0.1.0",
+        license(name = "Proprietary")
+    ),
     paths(handlers::handle_get_inquiries, handlers::handle_post_inquiry),
     components(schemas(
         models::Inquiry,
@@ -111,9 +117,28 @@ fn cognito_client_id() -> Result<String, Box<dyn std::error::Error>> {
     get_required_env("CLIENT_ID")
 }
 
-fn apply_cognito_security(openapi: OpenApiDoc, issuer: String, client_id: String) -> Value {
+fn apply_cognito_security(
+    openapi: OpenApiDoc,
+    issuer: String,
+    client_id: String,
+) -> Result<Value, Box<dyn std::error::Error>> {
     let mut value = serde_json::to_value(openapi).expect("OpenAPI serialization should succeed");
-    value["components"]["securitySchemes"]["CognitoAuthorizer"]["x-amazon-apigateway-authorizer"] =
+
+    let components = value
+        .get_mut("components")
+        .and_then(Value::as_object_mut)
+        .ok_or("components must be an object")?;
+    let security_schemes = components
+        .get_mut("securitySchemes")
+        .and_then(Value::as_object_mut)
+        .ok_or("securitySchemes must be an object")?;
+    let cognito_authorizer = security_schemes
+        .get_mut("CognitoAuthorizer")
+        .and_then(Value::as_object_mut)
+        .ok_or("CognitoAuthorizer must be an object")?;
+
+    cognito_authorizer.insert(
+        "x-amazon-apigateway-authorizer".to_string(),
         json!({
             "identitySource": "$request.header.Authorization",
             "jwtConfiguration": {
@@ -121,15 +146,13 @@ fn apply_cognito_security(openapi: OpenApiDoc, issuer: String, client_id: String
                 "issuer": issuer
             },
             "type": "jwt"
-        });
-    value
+        }),
+    );
+    Ok(value)
 }
 
-fn apply_metadata(mut openapi: Value) -> Value {
+fn apply_openapi_version(mut openapi: Value) -> Value {
     openapi["openapi"] = json!("3.0.1");
-    openapi["info"]["title"] = json!("Contact Form API");
-    openapi["info"]["description"] = json!("API for contact form inquiries.");
-    openapi["info"]["license"] = json!({ "name": "Proprietary" });
     openapi
 }
 
@@ -140,8 +163,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let openapi = build_openapi(api_endpoint()?);
-    let openapi = apply_cognito_security(openapi, cognito_issuer()?, cognito_client_id()?);
-    let openapi = apply_metadata(openapi);
+    let openapi = apply_cognito_security(openapi, cognito_issuer()?, cognito_client_id()?)?;
+    let openapi = apply_openapi_version(openapi);
     let yaml = serde_yaml::to_string(&openapi)?;
     fs::write(&output, yaml)?;
 
@@ -180,7 +203,8 @@ mod tests {
             openapi,
             "https://cognito-idp.ap-northeast-3.amazonaws.com/pool".to_string(),
             "client-id".to_string(),
-        );
+        )
+        .expect("should apply cognito security");
         assert_eq!(
             openapi["components"]["securitySchemes"]["CognitoAuthorizer"]
                 ["x-amazon-apigateway-authorizer"]["jwtConfiguration"]["issuer"],
