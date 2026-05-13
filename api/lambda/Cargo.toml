@@ -7,6 +7,15 @@ edition = "2024"
 name = "api_handler"
 path = "src/main.rs"
 
+[[bin]]
+name = "generate-openapi"
+path = "src/bin/generate-openapi.rs"
+required-features = ["openapi"]
+
+[features]
+default = []
+openapi = ["dep:utoipa", "dep:serde_yaml"]
+
 [dependencies]
 lambda_runtime = "0.13"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
@@ -23,6 +32,8 @@ urlencoding = "2"
 sea-orm = { version = "1", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros"] }
 sea_orm_entities = { path = "../../infrastructure/sea_orm" }
 aurora-dsql-sqlx-connector = { version = "0.1.2", features = ["pool"] }
+utoipa = { version = "5", features = ["chrono", "uuid"], optional = true }
+serde_yaml = { version = "0.9", optional = true }
 
 [dev-dependencies]
 proptest = "1.11.0"

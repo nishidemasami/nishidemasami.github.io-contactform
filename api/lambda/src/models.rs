@@ -48,6 +48,7 @@ pub(crate) struct Response {
 }
 
 #[derive(Debug, Serialize, FromQueryResult)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub(crate) struct Inquiry {
     pub(crate) id: uuid::Uuid,
     pub(crate) cognito_sub: uuid::Uuid,
@@ -58,6 +59,7 @@ pub(crate) struct Inquiry {
 }
 
 #[derive(Debug, Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub(crate) struct InquiryListResponse {
     pub(crate) email: String,
     pub(crate) count: u64,
@@ -65,14 +67,24 @@ pub(crate) struct InquiryListResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub(crate) struct CreateInquiryRequest {
     pub(crate) subject: String,
     pub(crate) body: String,
 }
 
 #[derive(Debug, Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub(crate) struct CreateInquiryResponse {
     pub(crate) inquiry: Inquiry,
+}
+
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[allow(dead_code)]
+pub(crate) struct ErrorResponseBody {
+    pub(crate) error: String,
+    pub(crate) message: String,
 }
 
 impl From<inquiries::Model> for Inquiry {

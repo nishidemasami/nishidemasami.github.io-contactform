@@ -52,6 +52,15 @@ jobs:
           workspaces: api/lambda
           cache-on-failure: true
 
+      - name: Validate OpenAPI generation
+        working-directory: api/lambda
+        env:
+          OPENAPI_OUTPUT: /tmp/openapi-validate.yaml
+          API_ENDPOINT: https://placeholder.execute-api.ap-northeast-3.amazonaws.com
+          USER_POOL_ID: ap-northeast-3_placeholder
+          CLIENT_ID: placeholder
+        run: cargo run --features openapi --bin generate-openapi
+
       - name: Generate API documentation
         working-directory: api/lambda
         run: cargo doc --no-deps
@@ -219,27 +228,14 @@ jobs:
             --output text)
           echo "API_ENDPOINT=$API_ENDPOINT" >> $GITHUB_OUTPUT
 
-      - name: Get API ID from CloudFormation
-        id: api_outputs
-        run: |
-          API_ID=$(aws cloudformation describe-stacks \
-            --stack-name ${{ env.STACKNAME_PREFIX }}-api-${{ github.ref_name }} \
-            --query "Stacks[0].Outputs[?OutputKey=='HttpApiId'].OutputValue" \
-            --output text)
-          if [ -z "$API_ID" ] || [ "$API_ID" = "None" ]; then
-            echo "Error: CloudFormation output 'HttpApiId' is missing or not available for stack ${{ env.STACKNAME_PREFIX }}-api-${{ github.ref_name }}." >&2
-            exit 1
-          fi
-          echo "API_ID=$API_ID" >> "$GITHUB_OUTPUT"
-
-      - name: Export OpenAPI definition
-        run: |
-          aws apigatewayv2 export-api \
-            --api-id ${{ steps.api_outputs.outputs.API_ID }} \
-            --output-type YAML \
-            --specification OAS30 \
-            --stage-name '$default' \
-            api/openapi-${{ github.ref_name }}.yaml
+      - name: Generate OpenAPI definition
+        working-directory: api/lambda
+        env:
+          OPENAPI_OUTPUT: ../openapi-${{ github.ref_name }}.yaml
+          API_ENDPOINT: ${{ steps.cognito.outputs.API_ENDPOINT }}
+          USER_POOL_ID: ${{ steps.cognito.outputs.USER_POOL_ID }}
+          CLIENT_ID: ${{ steps.cognito.outputs.CLIENT_ID }}
+        run: cargo run --features openapi --bin generate-openapi
 
       - name: Generate OpenAPI Explorer
         run: |
