@@ -81,7 +81,7 @@ pub(crate) struct CreateInquiryResponse {
 
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-#[cfg(feature = "openapi")]
+#[allow(dead_code)]
 pub(crate) struct ErrorResponseBody {
     pub(crate) error: String,
     pub(crate) message: String,
