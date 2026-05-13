@@ -17,7 +17,7 @@ components:
       required:
       - inquiry
       type: object
-    ErrorResponse:
+    ErrorResponseBody:
       properties:
         error:
           type: string
@@ -70,9 +70,15 @@ components:
       - inquiries
       type: object
   securitySchemes:
+    BearerAuth:
+      bearerFormat: JWT
+      description: JWTによるBearerトークン認証
+      scheme: bearer
+      type: http
     CognitoAuthorizer:
-      flows: {}
-      type: oauth2
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
       x-amazon-apigateway-authorizer:
         identitySource: $request.header.Authorization
         jwtConfiguration:
@@ -86,11 +92,11 @@ info:
     name: Proprietary
   title: Contact Form API
   version: 0.1.0
-openapi: 3.1.0
+openapi: 3.0.1
 paths:
   /inquiries:
     get:
-      operationId: get_inquiries
+      operationId: handle_get_inquiries
       responses:
         '200':
           content:
@@ -102,20 +108,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErrorResponseBody'
           description: Unauthorized
         '500':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErrorResponseBody'
           description: Internal server error
       security:
       - CognitoAuthorizer: []
+      - BearerAuth: []
       tags:
       - inquiries
     post:
-      operationId: post_inquiry
+      operationId: handle_post_inquiry
       requestBody:
         content:
           application/json:
@@ -133,16 +140,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErrorResponseBody'
           description: Unauthorized
         '500':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErrorResponseBody'
           description: Internal server error
       security:
       - CognitoAuthorizer: []
+      - BearerAuth: []
       tags:
       - inquiries
 servers:

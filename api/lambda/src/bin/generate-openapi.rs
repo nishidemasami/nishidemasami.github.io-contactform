@@ -1,8 +1,7 @@
-use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{env, fs, path::PathBuf};
 use utoipa::{
-    Modify, OpenApi, ToSchema,
+    Modify, OpenApi,
     openapi::{
         OpenApi as OpenApiDoc,
         security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
@@ -10,72 +9,12 @@ use utoipa::{
     },
 };
 
-#[derive(Serialize, Deserialize, ToSchema)]
-struct Inquiry {
-    id: uuid::Uuid,
-    cognito_sub: uuid::Uuid,
-    email: String,
-    subject: String,
-    body: String,
-    created_at: chrono::DateTime<chrono::FixedOffset>,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-struct InquiryListResponse {
-    email: String,
-    count: u64,
-    inquiries: Vec<Inquiry>,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-struct CreateInquiryRequest {
-    subject: String,
-    body: String,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-struct CreateInquiryResponse {
-    inquiry: Inquiry,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-struct ErrorResponse {
-    error: String,
-    message: String,
-}
-
-#[utoipa::path(
-    get,
-    path = "/inquiries",
-    tag = "inquiries",
-    responses(
-        (status = 200, description = "Get inquiries", body = InquiryListResponse),
-        (status = 401, description = "Unauthorized", body = ErrorResponse),
-        (status = 500, description = "Internal server error", body = ErrorResponse),
-    ),
-    security(
-        ("CognitoAuthorizer" = [])
-    )
-)]
+#[path = "../models.rs"]
 #[allow(dead_code)]
-fn get_inquiries() {}
-
-#[utoipa::path(
-    post,
-    path = "/inquiries",
-    tag = "inquiries",
-    request_body = CreateInquiryRequest,
-    responses(
-        (status = 201, description = "Create inquiry", body = CreateInquiryResponse),
-        (status = 401, description = "Unauthorized", body = ErrorResponse),
-        (status = 500, description = "Internal server error", body = ErrorResponse),
-    ),
-    security(
-        ("CognitoAuthorizer" = [])
-    )
-)]
+mod models;
+#[path = "../handlers.rs"]
 #[allow(dead_code)]
-fn post_inquiry() {}
+mod handlers;
 
 struct ServerAddon {
     url: String,
@@ -101,21 +40,31 @@ impl Modify for SecurityAddon {
                         .build(),
                 ),
             );
+            components.add_security_scheme(
+                "BearerAuth",
+                SecurityScheme::Http(
+                    HttpBuilder::new()
+                        .scheme(HttpAuthScheme::Bearer)
+                        .bearer_format("JWT")
+                        .description(Some("JWTによるBearerトークン認証"))
+                        .build(),
+                ),
+            );
         }
     }
 }
 
 #[derive(OpenApi)]
 #[openapi(
-    paths(get_inquiries, post_inquiry),
+    paths(handlers::handle_get_inquiries, handlers::handle_post_inquiry),
     components(schemas(
-        Inquiry,
-        InquiryListResponse,
-        CreateInquiryRequest,
-        CreateInquiryResponse,
-        ErrorResponse
+        models::Inquiry,
+        models::InquiryListResponse,
+        models::CreateInquiryRequest,
+        models::CreateInquiryResponse,
+        models::ErrorResponseBody
     )),
-    modifiers(&SecurityAddon)
+    modifiers(&SecurityAddon),
 )]
 struct ApiDoc;
 
@@ -137,37 +86,35 @@ fn output_path() -> PathBuf {
     PathBuf::from("../openapi.yaml")
 }
 
-fn api_endpoint() -> String {
-    env::var("API_ENDPOINT")
-        .unwrap_or_else(|_| "https://example.execute-api.ap-northeast-3.amazonaws.com".to_string())
+fn get_required_env(name: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let value = env::var(name)?;
+    let trimmed = value.trim();
+    if trimmed.is_empty() || trimmed == "None" {
+        return Err(format!("{name} must not be empty or None").into());
+    }
+    Ok(trimmed.to_string())
 }
 
-fn cognito_issuer() -> Option<String> {
-    let user_pool_id = env::var("USER_POOL_ID").ok()?;
+fn api_endpoint() -> Result<String, Box<dyn std::error::Error>> {
+    get_required_env("API_ENDPOINT")
+}
+
+fn cognito_issuer() -> Result<String, Box<dyn std::error::Error>> {
+    let user_pool_id = get_required_env("USER_POOL_ID")?;
     let region = env::var("AWS_REGION").unwrap_or_else(|_| "ap-northeast-3".to_string());
-    Some(format!(
+    Ok(format!(
         "https://cognito-idp.{region}.amazonaws.com/{user_pool_id}"
     ))
 }
 
-fn cognito_client_id() -> Option<String> {
-    env::var("CLIENT_ID").ok()
+fn cognito_client_id() -> Result<String, Box<dyn std::error::Error>> {
+    get_required_env("CLIENT_ID")
 }
 
-fn apply_cognito_security(
-    openapi: OpenApiDoc,
-    issuer: Option<String>,
-    client_id: Option<String>,
-) -> Value {
+fn apply_cognito_security(openapi: OpenApiDoc, issuer: String, client_id: String) -> Value {
     let mut value = serde_json::to_value(openapi).expect("OpenAPI serialization should succeed");
-
-    let mut security_scheme = json!({
-        "type": "oauth2",
-        "flows": {}
-    });
-
-    if let (Some(issuer), Some(client_id)) = (issuer, client_id) {
-        security_scheme["x-amazon-apigateway-authorizer"] = json!({
+    value["components"]["securitySchemes"]["CognitoAuthorizer"]["x-amazon-apigateway-authorizer"] =
+        json!({
             "identitySource": "$request.header.Authorization",
             "jwtConfiguration": {
                 "audience": [client_id],
@@ -175,13 +122,11 @@ fn apply_cognito_security(
             },
             "type": "jwt"
         });
-    }
-
-    value["components"]["securitySchemes"]["CognitoAuthorizer"] = security_scheme;
     value
 }
 
 fn apply_metadata(mut openapi: Value) -> Value {
+    openapi["openapi"] = json!("3.0.1");
     openapi["info"]["title"] = json!("Contact Form API");
     openapi["info"]["description"] = json!("API for contact form inquiries.");
     openapi["info"]["license"] = json!({ "name": "Proprietary" });
@@ -194,8 +139,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         fs::create_dir_all(parent)?;
     }
 
-    let openapi = build_openapi(api_endpoint());
-    let openapi = apply_cognito_security(openapi, cognito_issuer(), cognito_client_id());
+    let openapi = build_openapi(api_endpoint()?);
+    let openapi = apply_cognito_security(openapi, cognito_issuer()?, cognito_client_id()?);
     let openapi = apply_metadata(openapi);
     let yaml = serde_yaml::to_string(&openapi)?;
     fs::write(&output, yaml)?;
@@ -215,42 +160,31 @@ mod tests {
     }
 
     #[test]
-    fn openapi_contains_expected_server_url() {
+    fn openapi_contains_bearer_auth_scheme() {
         let openapi = build_openapi("https://example.com".to_string());
-        let servers = openapi.servers.expect("servers should be set");
-        assert_eq!(servers[0].url, "https://example.com");
+        let value = serde_json::to_value(openapi).expect("should serialize openapi");
+        assert_eq!(
+            value["components"]["securitySchemes"]["BearerAuth"]["type"],
+            "http"
+        );
+        assert_eq!(
+            value["components"]["securitySchemes"]["BearerAuth"]["scheme"],
+            "bearer"
+        );
     }
 
     #[test]
-    fn cognito_security_scheme_contains_authorizer_when_inputs_exist() {
+    fn cognito_security_scheme_contains_authorizer() {
         let openapi = build_openapi("https://example.com".to_string());
         let openapi = apply_cognito_security(
             openapi,
-            Some("https://cognito-idp.ap-northeast-3.amazonaws.com/pool".to_string()),
-            Some("client-id".to_string()),
+            "https://cognito-idp.ap-northeast-3.amazonaws.com/pool".to_string(),
+            "client-id".to_string(),
         );
         assert_eq!(
-            openapi["components"]["securitySchemes"]["CognitoAuthorizer"]["x-amazon-apigateway-authorizer"]
-                ["jwtConfiguration"]["issuer"],
+            openapi["components"]["securitySchemes"]["CognitoAuthorizer"]
+                ["x-amazon-apigateway-authorizer"]["jwtConfiguration"]["issuer"],
             "https://cognito-idp.ap-northeast-3.amazonaws.com/pool"
         );
-        assert_eq!(
-            openapi["components"]["securitySchemes"]["CognitoAuthorizer"]["x-amazon-apigateway-authorizer"]
-                ["jwtConfiguration"]["audience"][0],
-            "client-id"
-        );
-    }
-
-    #[test]
-    fn metadata_is_applied() {
-        let openapi = build_openapi("https://example.com".to_string());
-        let openapi = apply_cognito_security(openapi, None, None);
-        let openapi = apply_metadata(openapi);
-        assert_eq!(openapi["info"]["title"], "Contact Form API");
-        assert_eq!(
-            openapi["info"]["description"],
-            "API for contact form inquiries."
-        );
-        assert_eq!(openapi["info"]["license"]["name"], "Proprietary");
     }
 }

@@ -1,12 +1,31 @@
 use crate::models::{
     CreateInquiryRequest, CreateInquiryResponse, Inquiry, InquiryListResponse, Response,
 };
+#[cfg(feature = "openapi")]
+use crate::models::ErrorResponseBody;
 use lambda_runtime::Error;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set,
 };
 use sea_orm_entities::entity::inquiries::{self, Column, Entity as Inquiries};
 
+#[cfg_attr(
+    feature = "openapi",
+    utoipa::path(
+        get,
+        path = "/inquiries",
+        tag = "inquiries",
+        responses(
+            (status = 200, description = "Get inquiries", body = InquiryListResponse),
+            (status = 401, description = "Unauthorized", body = ErrorResponseBody),
+            (status = 500, description = "Internal server error", body = ErrorResponseBody),
+        ),
+        security(
+            ("CognitoAuthorizer" = []),
+            ("BearerAuth" = []),
+        )
+    )
+)]
 pub(crate) async fn handle_get_inquiries(
     db: &DatabaseConnection,
     email: &str,
@@ -40,6 +59,24 @@ pub(crate) async fn handle_get_inquiries(
     ))
 }
 
+#[cfg_attr(
+    feature = "openapi",
+    utoipa::path(
+        post,
+        path = "/inquiries",
+        tag = "inquiries",
+        request_body = CreateInquiryRequest,
+        responses(
+            (status = 201, description = "Create inquiry", body = CreateInquiryResponse),
+            (status = 401, description = "Unauthorized", body = ErrorResponseBody),
+            (status = 500, description = "Internal server error", body = ErrorResponseBody),
+        ),
+        security(
+            ("CognitoAuthorizer" = []),
+            ("BearerAuth" = []),
+        )
+    )
+)]
 pub(crate) async fn handle_post_inquiry(
     db: &DatabaseConnection,
     email: &str,

@@ -52,6 +52,15 @@ jobs:
           workspaces: api/lambda
           cache-on-failure: true
 
+      - name: Validate OpenAPI generation
+        working-directory: api/lambda
+        env:
+          OPENAPI_OUTPUT: /tmp/openapi-validate.yaml
+          API_ENDPOINT: https://placeholder.execute-api.ap-northeast-3.amazonaws.com
+          USER_POOL_ID: ap-northeast-3_placeholder
+          CLIENT_ID: placeholder
+        run: cargo run --features openapi --bin generate-openapi
+
       - name: Generate API documentation
         working-directory: api/lambda
         run: cargo doc --no-deps
