@@ -84,11 +84,8 @@ jobs:
         run: npm run build-storybook
 
       - name: Generate SVG from PlantUML files
-        run: |
-          docker run --rm \
-            -v "$(pwd)/docs/plantuml:/data" \
-            plantuml/plantuml \
-            -tsvg -r /data
+        working-directory: docs/plantuml
+        run: sh conv_from_puml_into_svg.sh
 
       - name: Build Next.js (with placeholder env vars)
         working-directory: testpage
@@ -163,11 +160,8 @@ jobs:
           cp -r testpage/storybook-static/* _output/raw/storybook/
 
       - name: Generate SVG from PlantUML files
-        run: |
-          docker run --rm \
-            -v "$(pwd)/docs/plantuml:/data" \
-            plantuml/plantuml \
-            -tsvg -r /data
+        working-directory: docs/plantuml
+        run: sh conv_from_puml_into_svg.sh
 
       - name: Generate wiki pages
         working-directory: docs
