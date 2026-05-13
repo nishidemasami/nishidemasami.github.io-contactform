@@ -42,6 +42,6 @@
 ## リンク
 
 - <a href="https://github.com/nishidemasami/nishidemasami.github.io-contactform" target="_blank">GitHubリポジトリ</a>
-- <a href="https://ngicf-testpage.pages.dev/" target="_blank">開発者向けドキュメントページ</a>
-- <a href="https://nishidemasami.github.io/nishidemasami.github.io-contactform/" target="_blank">利用者向けドキュメントページ</a>
+- <a href="https://ngicf-testpage.pages.dev/" target="_blank">開発者向けドキュメントページ（CloudFlare Pages）</a>
+- <a href="https://nishidemasami.github.io/nishidemasami.github.io-contactform/" target="_blank">利用者向けドキュメントページ（GitHub Pages）</a>
 <!-- この行以降は自動でリンクが挿入されるので、編集や追記をしないでください。 -->

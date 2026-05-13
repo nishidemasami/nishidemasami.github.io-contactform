@@ -62,7 +62,7 @@ API 側は [認証](auth.md) の Export を JWT Authorizer に、[データベ�
 2. `testpage/` で `npm ci`、`npm run lint`、TypeDoc 生成、Storybook ビルド、Next.js ビルドを実行
 3. 作業ツリー上の `docs/README.md` に外部リンクを追記して Honkit をビルド
 4. Cognito / API の CloudFormation Export を読んで `testpage` を本番用設定で静的ビルド
-5. OpenAPI をエクスポートし、Swagger UI を `_output/raw/openapi/` に生成
+5. OpenAPI をエクスポートし、Swagger UI を `_output/raw/rapidoc/` に生成
 6. `_output/` を Cloudflare Pages に配信
 
 このワークフローは、**ビルド時の作業ツリーで `docs/README.md` にリンクを追記してから Honkit を生成する** ため、コミット済みファイルと公開ページの表紙に一時的な差分が生じます。
