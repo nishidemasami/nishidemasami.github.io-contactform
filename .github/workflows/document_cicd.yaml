@@ -168,6 +168,11 @@ jobs:
         run: |
           echo '- <a href="/testpage/" target="_blank">テストページ</a>' >> README.md
           echo '- <a href="/raw/rapidoc/" target="_blank">API ドキュメント（RapiDoc）</a>' >> README.md
+          echo '- <a href="/raw/openapi-explorer/" target="_blank">API ドキュメント（OpenAPI Explorer）</a>' >> README.md
+          echo '- <a href="/raw/swagger-editor/" target="_blank">API ドキュメント（Swagger Editor）</a>' >> README.md
+          echo '- <a href="/raw/scalar/" target="_blank">API ドキュメント（Scalar）</a>' >> README.md
+          echo '- <a href="/raw/redoc/" target="_blank">API ドキュメント（Redoc）</a>' >> README.md
+          echo '- <a href="/raw/stoplight/" target="_blank">API ドキュメント（Stoplight）</a>' >> README.md
           echo '- <a href="/raw/swaggerui/" target="_blank">API ドキュメント（SwaggerUI）</a>' >> README.md
           echo '- <a href="/raw/api/api_handler/index.html" target="_blank">バックエンドAPI ドキュメント（Rustdoc）</a>' >> README.md
           echo '- <a href="/raw/storybook/" target="_blank">テストページ ドキュメント（Storybook）</a>' >> README.md
@@ -236,6 +241,100 @@ jobs:
             --stage-name '$default' \
             api/openapi-${{ github.ref_name }}.yaml
 
+      - name: Generate OpenAPI Explorer
+        run: |
+          mkdir -p _output/raw/openapi-explorer
+          cp api/openapi-${{ github.ref_name }}.yaml _output/raw/openapi-explorer/
+          cat <<'EOF' > _output/raw/openapi-explorer/index.html
+          <!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8"/>
+              <script src="https://unpkg.com/openapi-explorer/dist/browser/openapi-explorer.min.js"></script>
+            </head>
+            <body>
+              <openapi-explorer
+                spec-url="./openapi-${{ github.ref_name }}.yaml">
+              </openapi-explorer>
+            </body>
+          </html>
+          EOF
+
+      - name: Generate Swagger Editor
+        run: |
+          mkdir -p _output/raw/swagger-editor
+          cp api/openapi-${{ github.ref_name }}.yaml _output/raw/swagger-editor/
+          cat <<'EOF' > _output/raw/swagger-editor/index.html
+          <!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8"/>
+              <link rel="stylesheet" href="https://unpkg.com/swagger-editor-dist/swagger-editor.css" />
+            </head>
+            <body>
+              <div id="swagger-editor"></div>
+              <script src="https://unpkg.com/swagger-editor-dist/swagger-editor-bundle.js"></script>
+              <script>
+                window.onload = () => {
+                  SwaggerEditorBundle({
+                    url: './openapi-${{ github.ref_name }}.yaml',
+                    dom_id: '#swagger-editor'
+                  })
+                }
+              </script>
+            </body>
+          </html>
+          EOF
+
+      - name: Generate Scalar
+        run: |
+          mkdir -p _output/raw/scalar
+          cp api/openapi-${{ github.ref_name }}.yaml _output/raw/scalar/
+          cat <<'EOF' > _output/raw/scalar/index.html
+          <!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8"/>
+              <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+            </head>
+            <body>
+              <script>
+                Scalar.createApiReference('#app', {
+                  url: './openapi-${{ github.ref_name }}.yaml',
+                })
+              </script>
+              <div id="app"></div>
+            </body>
+          </html>
+          EOF
+
+      - name: Generate Redoc
+        run: |
+          npx redoc-cli bundle \
+            api/openapi-${{ github.ref_name }}.yaml \
+            -o _output/raw/redoc/index.html
+
+      - name: Generate Stoplight Elements
+        run: |
+          mkdir -p _output/raw/stoplight
+          cp api/openapi-${{ github.ref_name }}.yaml _output/raw/stoplight/
+          cat <<'EOF' > _output/raw/stoplight/index.html
+          <!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8"/>
+              <script src="https://unpkg.com/@stoplight/elements/web-components.min.js"></script>
+              <link rel="stylesheet" href="https://unpkg.com/@stoplight/elements/styles.min.css">
+            </head>
+            <body>
+              <elements-api
+                apiDescriptionUrl="./openapi-${{ github.ref_name }}.yaml"
+                router="hash"
+              />
+            </body>
+          </html>
+          EOF
+
       - name: Generate SwaggerUI
         run: |
           mkdir -p _output/raw/swaggerui
@@ -243,7 +342,8 @@ jobs:
           npm install --prefix /tmp/swagger-ui-dist swagger-ui-dist@5.32.5
           SWAGGER_DIST=/tmp/swagger-ui-dist/node_modules/swagger-ui-dist
           cp -r "$SWAGGER_DIST"/* _output/raw/swaggerui/
-
+          sed -i 's|https://petstore.swagger.io/v2/swagger.json|./openapi-${{ github.ref_name }}.yaml|g' _output/raw/swaggerui/swagger-initializer.js
+          
       - name: Generate RapiDoc HTML
         run: |
           mkdir -p _output/raw/rapidoc
