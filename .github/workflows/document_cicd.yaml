@@ -31,14 +31,10 @@ jobs:
         uses: actions/checkout@v6
       - run: corepack enable
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: aws-actions/setup-sam@v3
         with:
-          python-version: '3.13'
-
-      - name: Install SAM CLI
-        run: |
-          pip install aws-sam-cli
+          use-installer: true
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Validate SAM template
         run: |
@@ -207,14 +203,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: aws-actions/setup-sam@v3
         with:
-          python-version: '3.14'
-
-      - name: Install SAM CLI
-        run: |
-          pip install aws-sam-cli
+          use-installer: true
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get Cognito and API endpoint values
         id: cognito
@@ -394,17 +386,9 @@ jobs:
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_APITOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNTID }}
+          command: pages deploy _output  --project-name=${{ secrets.CLOUDFLARE_PROJECTNAME }} 2>&1 | tee wrangler.log
 
-      - name: Deploy to Cloudflare Pages
-        id: pages_deploy
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNTID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_APITOKEN }}
-        run: |
-          pnpm exec wrangler pages deploy _output \
-            --project-name=${{ secrets.CLOUDFLARE_PROJECTNAME }} \
-            2>&1 | tee wrangler.log
-          
       - name: Extract Pages URL
         id: extract_url
         run: |
