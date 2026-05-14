@@ -28,7 +28,7 @@ export default function MyPage() {
         //idTokenを取得
         const session = await fetchAuthSession();
         const token = session?.tokens?.idToken?.toString();
-        setIdToken(token);
+        setIdToken(token || "");
         setLoading(false);
       })
       .catch(() => {
