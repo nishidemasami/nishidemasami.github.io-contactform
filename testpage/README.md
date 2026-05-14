@@ -8,6 +8,13 @@
 curl -fsSL https://get.pnpm.io/install.sh | sh -
 ```
 
+### 各コマンド
+- `pnpm exec tsc --noEmit` ： 型チェック
+- `pnpm lint` ： リントチェック
+- `pnpm dev` ： 開発モード起動
+- `pnpm build` ： Next.jsのビルド
+- `pnpm build-storybook` ： StoryBookのビルド
+
 ### 各ファイルの説明
 - app
   - globals.css
