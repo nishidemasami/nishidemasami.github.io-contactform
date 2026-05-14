@@ -8,6 +8,11 @@
 curl -fsSL https://get.pnpm.io/install.sh | sh -
 ```
 
+### 環境変数の設定
+- NEXT_PUBLIC_USER_POOL_ID=
+- NEXT_PUBLIC_USER_POOL_CLIENT_ID= 
+- NEXT_PUBLIC_API_ENDPOINT=
+
 ### 各コマンド
 - `pnpm exec tsc --noEmit` ： 型チェック
 - `pnpm lint` ： リントチェック

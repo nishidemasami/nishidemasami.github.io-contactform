@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
-    "start": "next start",
+    "start": "serve out",
     "lint": "next lint",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "start-storybook": "storybook dev -p 6006"
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.9.2",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@storybook/addon-docs": "^9.1.20",
     "@storybook/nextjs-vite": "^9.1.20",
+    "@storybook/test-runner": "^0.24.3",
     "@types/node": "^22.15.3",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
@@ -26,6 +28,7 @@
     "eslint": "^9.26.0",
     "eslint-config-next": "^15.3.1",
     "postcss": "^8.5.3",
+    "serve": "^14.2.6",
     "storybook": "^9.1.20",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",

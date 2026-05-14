@@ -4,8 +4,8 @@ import '@aws-amplify/ui-react/styles.css';
 import AmplifyProvider from '../components/AmplifyProvider';
 
 export const metadata: Metadata = {
-  title: 'Inquiry Management System',
-  description: 'Inquiry management system with AWS Amplify and Cognito',
+  title: 'testpage',
+  description: 'testpage with AWS Amplify and Cognito',
 };
 
 /**
