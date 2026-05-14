@@ -347,7 +347,7 @@ jobs:
         run: |
           mkdir -p _output/raw/swaggerui
           cp api/openapi-${{ github.ref_name }}.yaml _output/raw/swaggerui/
-          pnpm install --prefix /tmp/swagger-ui-dist swagger-ui-dist@5.32.5
+          pnpm add --prefix /tmp/swagger-ui-dist swagger-ui-dist@5.32.5
           SWAGGER_DIST=/tmp/swagger-ui-dist/node_modules/swagger-ui-dist
           cp -r "$SWAGGER_DIST"/* _output/raw/swaggerui/
           sed -i 's|https://petstore.swagger.io/v2/swagger.json|./openapi-${{ github.ref_name }}.yaml|g' _output/raw/swaggerui/swagger-initializer.js
