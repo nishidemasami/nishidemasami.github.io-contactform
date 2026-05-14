@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, signOut } from 'aws-amplify/auth';
+import { getCurrentUser, signOut, fetchAuthSession } from 'aws-amplify/auth';
 import { MyPageView } from './MyPageView';
 
 /**
@@ -17,13 +17,18 @@ import { MyPageView } from './MyPageView';
 export default function MyPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
+  const [idToken, setIdToken] = useState('');
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     getCurrentUser()
-      .then((user) => {
+      .then(async (user) => {
         setEmail(user.signInDetails?.loginId ?? user.username);
+        //idTokenを取得
+        const session = await fetchAuthSession();
+        const token = session?.tokens?.idToken?.toString();
+        setIdToken(token);
         setLoading(false);
       })
       .catch(() => {
@@ -49,5 +54,5 @@ export default function MyPage() {
     );
   }
 
-  return <MyPageView email={email} signingOut={signingOut} onSignOut={handleSignOut} />;
+  return <MyPageView email={email} idToken={idToken} signingOut={signingOut} onSignOut={handleSignOut} />;
 }

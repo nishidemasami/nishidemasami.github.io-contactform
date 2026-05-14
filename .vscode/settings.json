@@ -13,4 +13,6 @@
     "PATH": "/home/codespace/.cargo/bin:/usr/bin:/bin"
   },
   "editor.wordWrap": "on",
+  "editor.tabSize": 2,
+  "editor.insertSpaces": false,
 }

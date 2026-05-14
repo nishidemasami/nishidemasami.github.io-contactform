@@ -9,16 +9,19 @@ import Link from 'next/link';
  * StorybookなどでUIを独立してテストするために使用します。
  *
  * @param email - ログイン中のユーザーのメールアドレス
+ * @param idToken - ログイン中のユーザーのidToken
  * @param signingOut - ログアウト処理中かどうか
  * @param onSignOut - ログアウトボタンのクリックハンドラ
  * @returns マイページダッシュボードUI
  */
 export function MyPageView({
   email,
+  idToken,
   signingOut,
   onSignOut,
 }: {
   email: string;
+  idToken: string;
   signingOut: boolean;
   onSignOut: () => void;
 }) {
@@ -42,6 +45,9 @@ export function MyPageView({
           <h2 className="text-2xl font-bold text-gray-800 mb-2">マイページ</h2>
           <p className="text-gray-500">
             ログイン中：<span className="font-medium text-gray-700">{email}</span>
+          </p>
+          <p className="text-gray-500">
+            IDトークン：<span className="font-medium text-gray-700">{idToken}</span>
           </p>
         </div>
 
