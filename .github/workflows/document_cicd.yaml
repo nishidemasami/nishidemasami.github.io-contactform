@@ -390,9 +390,10 @@ jobs:
             })
             core.setOutput('deployment_id', res.data.id)
 
-
-      - name: Install Wrangler CLI
-        run: pnpm install wrangler --save-dev
+      - name: Setup Wrangler CLI
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_APITOKEN }}
 
       - name: Deploy to Cloudflare Pages
         id: pages_deploy
