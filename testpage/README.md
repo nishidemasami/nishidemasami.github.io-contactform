@@ -20,7 +20,7 @@ curl -fsSL https://get.pnpm.io/install.sh | sh -
 - `pnpm build` ： Next.jsのビルド
 - `pnpm build-storybook` ： StoryBookのビルド
 
-### 各ファイルの説明
+### 各ファイルの説明[WIP]
 - app
   - globals.css
   - inquiries

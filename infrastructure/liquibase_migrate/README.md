@@ -33,3 +33,12 @@ liquibase update \
 ```rust
 #[ignore = "ローカルでPostgreSQL環境が必要なため。"]
 ```
+
+## 各ソースの説明[WIP]
+- README.md
+- changelog.xml
+- changes
+  - *.sql
+- template.yaml
+
+TODO:追記
