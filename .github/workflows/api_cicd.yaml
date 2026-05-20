@@ -209,14 +209,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-
-      - name: Install Wrangler
-        run: npm install --global wrangler@4.86.0
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -254,15 +246,11 @@ jobs:
       - name: Export OpenAPI definition
         working-directory: api/lambda
         env:
-          OPENAPI_OUTPUT: ../../_output/openapi-${{ github.ref_name }}.yaml
+          OPENAPI_OUTPUT: ../openapi-${{ github.ref_name }}.yaml
           API_ENDPOINT: ${{ steps.cognito.outputs.API_ENDPOINT }}
           USER_POOL_ID: ${{ steps.cognito.outputs.USER_POOL_ID }}
           CLIENT_ID: ${{ steps.cognito.outputs.CLIENT_ID }}
         run: cargo run --features openapi --bin generate-openapi
-
-      - name: Generate RapiDoc HTML viewer
-        run: |
-          echo '<!doctype html><meta charset="utf-8"><script src="https://unpkg.com/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script><script src="https://unpkg.com/rapidoc@9.3.8/dist/rapidoc-min.js"></script><body><rapi-doc style="visibility: visible" id="doc" spec-url="./openapi-${{ github.ref_name }}.yaml" render-style="read" allow-try="true" allow-authentication="true" persist-auth="true" theme="dark" show-header="false" api-key-name="Authorization" api-key-location="header" api-key-value="eyJ..."></rapi-doc></body></html>' > _output/index.html
 
       - name: Create GitHub Deployment
         id: create_deployment
@@ -280,13 +268,21 @@ jobs:
             })
             core.setOutput('deployment_id', res.data.id)
 
-      - name: Deploy CloudFlare Pages
-        id: deploy_pages
-        uses: cloudflare/wrangler-action@v4
+      # - name: Deploy CloudFlare Pages
+      #   id: deploy_pages
+      #   uses: cloudflare/wrangler-action@v4
+      #   with:
+      #     apiToken: ${{ secrets.CLOUDFLARE_APITOKEN }}
+      #     accountId: ${{ secrets.CLOUDFLARE_ACCOUNTID }}
+      #     command: pages deploy _output --project-name=${{ secrets.CLOUDFLARE_PROJECTNAME }}
+
+      - name: Create Release (develop-coverage-report)
+        id: release_openapi
+        uses: softprops/action-gh-release@v2
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_APITOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNTID }}
-          command: pages deploy _output --project-name=${{ secrets.CLOUDFLARE_PROJECTNAME_API }}
+          tag_name: ${{ github.ref_name }}-release_openapi-${{ github.sha }}
+          name: OpenAPI definition (${{ github.ref_name }})
+          files: api/openapi-${{ github.ref_name }}.yaml
 
       - name: Update GitHub Deployment status
         if: success()
@@ -298,7 +294,7 @@ jobs:
               repo: context.repo.repo,
               deployment_id: ${{ steps.create_deployment.outputs.deployment_id }},
               state: 'success',
-              environment_url: '${{ steps.deploy_pages.outputs.deployment-url }}'
+              environment_url: '${{ steps.release_openapi.outputs.url }}'
             })
 
       - name: Mark deployment failure
