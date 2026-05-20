@@ -382,6 +382,10 @@ jobs:
             })
             core.setOutput('deployment_id', res.data.id)
 
+      - name: Generate 404 page
+        run: |
+          [ -f _output/404.html ] || cp _static/404.html _output/404.html
+
       - name: Deploy CloudFlare Pages
         id: deploy_pages
         uses: cloudflare/wrangler-action@v4
