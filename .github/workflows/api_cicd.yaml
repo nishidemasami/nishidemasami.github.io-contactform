@@ -276,7 +276,7 @@ jobs:
       #     accountId: ${{ secrets.CLOUDFLARE_ACCOUNTID }}
       #     command: pages deploy _output --project-name=${{ secrets.CLOUDFLARE_PROJECTNAME }}
 
-      - name: Create Release (develop-coverage-report)
+      - name: Create Release (OpenAPI definition)
         id: release_openapi
         uses: softprops/action-gh-release@v2
         with:
