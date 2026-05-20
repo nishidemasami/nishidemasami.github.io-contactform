@@ -343,7 +343,7 @@ jobs:
               const release = await github.rest.repos.getReleaseByTag({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                tag: "develop-coverage-report"
+                tag: "${{ github.ref_name }}-coverage-report-${{ github.sha }}"
               });
       
               await github.rest.repos.deleteRelease({
@@ -355,7 +355,7 @@ jobs:
               await github.rest.git.deleteRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                ref: "tags/develop-coverage-report"
+                ref: "tags/${{ github.ref_name }}-coverage-report-${{ github.sha }}"
               });
             } catch (e) {
               core.info("No existing release");
@@ -365,8 +365,8 @@ jobs:
         id: release_coverage
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: develop-coverage-report
-          name: develop build
+          tag_name: ${{ github.ref_name }}-coverage-report-${{ github.sha }}
+          name: ${{ github.ref_name }} test coverage report
           files: _output/coverage/index.html
 
       - name: Create GitHub Deployment
