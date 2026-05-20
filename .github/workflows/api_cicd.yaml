@@ -314,8 +314,9 @@ jobs:
     # Workflow permissions
     # ✔Read and write permissions
     permissions:
-      contents: read
+      contents: write
       deployments: write
+      pull-requests: write
     steps:
       - name: Download coverage report
         uses: actions/download-artifact@v4.1.3
