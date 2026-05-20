@@ -209,6 +209,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install Wrangler
+        run: npm install --global wrangler@4.86.0
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -375,6 +383,14 @@ jobs:
               description: 'Deploy coverage report'
             })
             core.setOutput('deployment_id', res.data.id)
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install Wrangler
+        run: npm install --global wrangler@4.86.0
 
       - name: Deploy CloudFlare Pages
         id: deploy_pages
