@@ -199,11 +199,11 @@ jobs:
     environment: ${{ github.ref_name }}
     needs: deploy
     if: github.event_name != 'pull_request'
-    # Note: You need to configure the workflow permissions to allow GitHub Actions to create Deployments. This can be done in the repository settings under Actions > General > Workflow permissions.
+    # Note: You need to configure the workflow permissions to allow GitHub Actions to create Deployments and Releases. This can be done in the repository settings under Actions > General > Workflow permissions.
     # Workflow permissions
     # ✔Read and write permissions
     permissions:
-      contents: read
+      contents: write
       deployments: write
     steps:
       - name: Checkout code
@@ -267,14 +267,6 @@ jobs:
               description: 'Deploy OpenAPI definition'
             })
             core.setOutput('deployment_id', res.data.id)
-
-      # - name: Deploy CloudFlare Pages
-      #   id: deploy_pages
-      #   uses: cloudflare/wrangler-action@v4
-      #   with:
-      #     apiToken: ${{ secrets.CLOUDFLARE_APITOKEN }}
-      #     accountId: ${{ secrets.CLOUDFLARE_ACCOUNTID }}
-      #     command: pages deploy _output --project-name=${{ secrets.CLOUDFLARE_PROJECTNAME }}
 
       - name: Create Release (OpenAPI definition)
         id: release_openapi
