@@ -1,3 +1,27 @@
+//! # HTTPリクエストハンドラーモジュール
+//!
+//! このモジュールは、コンタクトフォームAPIのHTTPリクエストハンドラーを提供します。
+//! [`crate::main`] のルーター (`function_handler`) から呼び出され、
+//! データベース操作を行ってJSONレスポンスを構築します。
+//!
+//! ## 提供するハンドラー
+//!
+//! | 関数 | HTTPメソッド | パス | 説明 |
+//! |------|------------|------|------|
+//! | [`handle_get_inquiries`] | GET | /inquiries | お問い合わせ一覧取得 |
+//! | [`handle_post_inquiry`] | POST | /inquiries | 新規お問い合わせ作成 |
+//!
+//! ## 認可モデル
+//!
+//! 全ハンドラーは認証済みユーザーのみ操作でき、JWTクレームから取得した
+//! `email` と `cognito_sub`（Cognito ユーザーの UUID）でデータをフィルタリングします。
+//! これにより、ユーザーは自分自身のお問い合わせにのみアクセス・作成できます。
+//!
+//! ## データモデル
+//!
+//! お問い合わせデータは [`sea_orm_entities::entity::inquiries`] エンティティで管理され、
+//! PostgreSQL テーブルに永続化されます。
+
 use crate::models::{
     CreateInquiryRequest, CreateInquiryResponse, Inquiry, InquiryListResponse, Response,
 };
@@ -26,13 +50,44 @@ use sea_orm_entities::entity::inquiries::{self, Column, Entity as Inquiries};
         )
     )
 )]
+/// 認証済みユーザーのお問い合わせ一覧を取得する
+///
+/// JWTクレームから取得した `email` と `cognito_sub` でデータベースをフィルタリングし、
+/// 当該ユーザーが送信したお問い合わせを作成日時の降順（新しい順）で返します。
+///
+/// ## データベースクエリ
+///
+/// ```sql
+/// SELECT id, cognito_sub, email, subject, body, created_at
+/// FROM inquiries
+/// WHERE email = $1 AND cognito_sub = $2
+/// ORDER BY created_at DESC
+/// ```
+///
+/// # Arguments
+///
+/// * `db` - SeaORM データベース接続。Aurora DSQL への接続が確立済みである必要があります。
+/// * `email` - JWTクレームから取得した認証済みユーザーのメールアドレス。
+///   このアドレスに一致するお問い合わせのみが返されます。
+/// * `cognito_sub` - JWTクレームの `sub` フィールドから取得した Cognito ユーザーの UUID。
+///   `email` と組み合わせることでユーザーを一意に識別します。
+/// * `cors_origin` - レスポンスの `Access-Control-Allow-Origin` ヘッダーに設定するオリジン。
+///
+/// # Returns
+///
+/// * `Ok(Response)` - HTTP 200 と [`InquiryListResponse`] のJSON（`email`, `count`, `inquiries` フィールドを含む）
+/// * `Err(Error)` - データベースクエリエラーまたはJSONシリアライズエラー
+///
+/// # Errors
+///
+/// - データベースクエリ失敗時: `"Database query failed: ..."` をログに記録し `Err` を返します。
+/// - JSONシリアライズ失敗時: [`serde_json::to_value`] のエラーを `?` で伝播します。
 pub(crate) async fn handle_get_inquiries(
     db: &DatabaseConnection,
     email: &str,
     cognito_sub: uuid::Uuid,
     cors_origin: &str,
 ) -> Result<Response, Error> {
-    tracing::info!("Querying inquiries for email: {}", email);
 
     let inquiries: Vec<Inquiry> = Inquiries::find()
         .filter(Column::Email.eq(email))
@@ -77,6 +132,45 @@ pub(crate) async fn handle_get_inquiries(
         )
     )
 )]
+/// 新規お問い合わせを作成する
+///
+/// リクエストボディから [`CreateInquiryRequest`] をデシリアライズし、
+/// UUID v7 の ID と現在時刻を付与してデータベースに保存します。
+/// 保存したお問い合わせを [`CreateInquiryResponse`] として HTTP 201 で返します。
+///
+/// ## データベース操作
+///
+/// ```sql
+/// INSERT INTO inquiries (id, cognito_sub, email, subject, body, created_at)
+/// VALUES ($1, $2, $3, $4, $5, $6)
+/// ```
+///
+/// ## ID の生成
+///
+/// お問い合わせ ID には UUID v7 ([`uuid::Uuid::now_v7`]) を使用します。
+/// UUID v7 はタイムスタンプベースのため、作成順ソートが可能です。
+///
+/// # Arguments
+///
+/// * `db` - SeaORM データベース接続。Aurora DSQL への接続が確立済みである必要があります。
+/// * `email` - JWTクレームから取得した認証済みユーザーのメールアドレス。
+///   お問い合わせのオーナーとして `inquiries.email` 列に保存されます。
+/// * `cognito_sub` - JWTクレームの `sub` フィールドから取得した Cognito ユーザーの UUID。
+///   お問い合わせのオーナーとして `inquiries.cognito_sub` 列に保存されます。
+/// * `body` - リクエストボディの文字列（JSON形式）。[`CreateInquiryRequest`] にデシリアライズされます。
+///   `subject`（件名）と `body`（本文）フィールドを含む必要があります。
+/// * `cors_origin` - レスポンスの `Access-Control-Allow-Origin` ヘッダーに設定するオリジン。
+///
+/// # Returns
+///
+/// * `Ok(Response)` - HTTP 201 と [`CreateInquiryResponse`] のJSON（作成されたお問い合わせ情報を含む）
+/// * `Err(Error)` - リクエストボディのパースエラー、データベース挿入エラー、またはJSONシリアライズエラー
+///
+/// # Errors
+///
+/// - リクエストボディのJSON解析失敗時: `"Failed to parse request body: ..."` をログに記録し `Err` を返します。
+/// - データベース挿入失敗時: `"Failed to insert inquiry: ..."` をログに記録し `Err` を返します。
+/// - JSONシリアライズ失敗時: [`serde_json::to_value`] のエラーを `?` で伝播します。
 pub(crate) async fn handle_post_inquiry(
     db: &DatabaseConnection,
     email: &str,
