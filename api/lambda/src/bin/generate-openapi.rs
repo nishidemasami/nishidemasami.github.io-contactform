@@ -93,6 +93,15 @@ impl Modify for SecurityAddon {
                         .build(),
                 ),
             );
+            components.add_security_scheme(
+                "BearerAuth",
+                SecurityScheme::Http(
+                    HttpBuilder::new()
+                        .scheme(HttpAuthScheme::Bearer)
+                        .bearer_format("JWT")
+                        .build(),
+                ),
+            );
         }
     }
 }
