@@ -88,6 +88,7 @@ pub(crate) async fn handle_get_inquiries(
     cognito_sub: uuid::Uuid,
     cors_origin: &str,
 ) -> Result<Response, Error> {
+    tracing::info!("Querying inquiries for email: {}", email);
 
     let inquiries: Vec<Inquiry> = Inquiries::find()
         .filter(Column::Email.eq(email))
