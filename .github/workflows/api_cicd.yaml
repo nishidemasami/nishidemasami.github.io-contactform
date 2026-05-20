@@ -95,12 +95,26 @@ jobs:
         working-directory: api/lambda
         run: cargo check
 
+      - name: Run Rust tests
+        working-directory: api/lambda
+        run: cargo test -- --include-ignored
+
+      - name: Run Rust documentation tests
+        working-directory: api/lambda
+        run: cargo test --doc
+
+      - name: Get cargo-tarpaulin version
+        id: tarpaulin-version
+        run: |
+          VERSION=$(cargo-tarpaulin --version | awk '{print $2}')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
       - name: Cache cargo-tarpaulin binary
         id: cache-tarpaulin
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/cargo-tarpaulin
-          key: cargo-tarpaulin-${{ runner.os }}
+          key: cargo-tarpaulin-${{ runner.os }}-${{ steps.tarpaulin-version.outputs.version }}
 
       - name: Install cargo-tarpaulin
         if: steps.cache-tarpaulin.outputs.cache-hit != 'true'
@@ -296,7 +310,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name }}
     needs: validate
-    if: github.event_name != 'pull_request'
     # Note: You need to configure the workflow permissions to allow GitHub Actions to create Deployments. This can be done in the repository settings under Actions > General > Workflow permissions.
     # Workflow permissions
     # ✔Read and write permissions
