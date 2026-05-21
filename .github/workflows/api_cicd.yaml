@@ -104,22 +104,16 @@ jobs:
       #   working-directory: api/lambda
       #   run: cargo test --doc
 
-      - name: Get cargo-tarpaulin max_stable_version
-        id: tarpaulin-version-check
-        run: |
-          VERSION=$(curl -s https://crates.io/api/v1/crates/cargo-tarpaulin | jq -r '.crate.max_stable_version')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-      
       - name: Cache cargo-tarpaulin binary
         id: cache-tarpaulin
         uses: actions/cache@v5
         with:
           path: ~/.cargo/bin/cargo-tarpaulin
-          key: cargo-tarpaulin-${{ runner.os }}-${{ steps.tarpaulin-version-check.outputs.version }}
+          key: cargo-tarpaulin-${{ runner.os }}-0.35.4
 
       - name: Install cargo-tarpaulin
         if: steps.cache-tarpaulin.outputs.cache-hit != 'true'
-        run: cargo install cargo-tarpaulin --version ${{ steps.tarpaulin-version-check.outputs.version }}
+        run: cargo install cargo-tarpaulin --version 0.35.4
 
       - name: Run Rust tests with coverage
         working-directory: api/lambda
