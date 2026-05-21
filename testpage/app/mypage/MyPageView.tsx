@@ -45,11 +45,13 @@ export function MyPageView({
           <h2 className="text-2xl font-bold text-gray-800 mb-2">デバッグ情報</h2>
           <p className="text-gray-500">
               <label
+                htmlFor="email"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 メールアドレス
               </label>
               <input
+                id="email"
                 type="text"
                 onFocus={function(e: React.FocusEvent<HTMLInputElement>) {
                   e.currentTarget.select(); 
@@ -66,8 +68,8 @@ export function MyPageView({
                 IDトークン※取り扱い注意⚠️
               </label>
               
-              <label className="cursor-pointer">
-                <input type="checkbox" className="peer" />
+              <label htmlFor="show-id-token" className="cursor-pointer">
+                <input id="show-id-token" type="checkbox" className="peer" />
                 <span className="text-blue-500">IDトークンを表示</span>
                 <div className="mt-2 invisible peer-checked:visible">
                   <input
