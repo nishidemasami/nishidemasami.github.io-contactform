@@ -26,12 +26,6 @@ jobs:
         with:
           node-version: '26'
 
-      - name: pnpm setup & configure pnpm global bin path
-        run: |
-          pnpm setup
-          source ~/.bashrc
-          echo "$(pnpm bin -g)" >> "$GITHUB_PATH"
-
       - name: Install GitHub Copilot CLI
         run: pnpm add -g @github/copilot
 
@@ -49,7 +43,7 @@ jobs:
             echo "Error: docs/AGENTS.md not found" >&2
             exit 1
           fi
-          copilot -p "task Review and update the wiki files under docs/ based on the instructions in docs/AGENTS.md. Maintain consistency, update cross-references, and keep all pages current." --allow-tool='write'
+          pnpm exec copilot -p "task Review and update the wiki files under docs/ based on the instructions in docs/AGENTS.md. Maintain consistency, update cross-references, and keep all pages current." --allow-tool='write'
 
       # Note: You need to configure the workflow permissions to allow GitHub Actions to create and approve pull requests. This can be done in the repository settings under Actions > General > Workflow permissions.
       # Workflow permissions
