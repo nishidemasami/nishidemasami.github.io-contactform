@@ -13,7 +13,7 @@
 | リソース | 役割 | 命名規則 |
 | --- | --- | --- |
 | `CognitoUserPool` | ユーザー管理本体 | `${StackNamePrefix}-user-pool-${Stage}` |
-| `CognitoUserPoolClient` | API / testpage が使うアプリクライアント | `${StackNamePrefix}-app-client-${Stage}` |
+| `CognitoUserPoolClient` | API / testpage / OpenAPI 生成が使うアプリクライアント | `${StackNamePrefix}-app-client-${Stage}` |
 
 `StackNamePrefix` の既定値は `snngicf`、`Stage` の既定値は `develop` です。テンプレートが許可する Stage は `develop` / `main` / `release` です。
 
@@ -38,17 +38,17 @@
 - `GenerateSecret: false`
 - `PreventUserExistenceErrors: ENABLED`
 
-現在のテンプレートは、[API](api.md) の JWT Authorizer と `testpage/` の Amplify 設定で使う、シンプルな App Client を用意する構成です。
+現在のテンプレートは、[API](api.md) の JWT Authorizer、`testpage/components/AmplifyProvider.tsx`、`api/lambda/src/bin/generate-openapi.rs` で使うシンプルな App Client を用意する構成です。
 
 ## CloudFormation Outputs
 
 | Output | Export 名 | 主な利用先 |
 | --- | --- | --- |
-| `CognitoUserPoolId` | `${StackNamePrefix}-auth-${Stage}-CognitoUserPoolId` | `testpage` ビルド時の `NEXT_PUBLIC_USER_POOL_ID` |
-| `CognitoUserPoolClientId` | `${StackNamePrefix}-auth-${Stage}-CognitoUserPoolClientId` | API Gateway JWT Audience、`NEXT_PUBLIC_USER_POOL_CLIENT_ID` |
+| `CognitoUserPoolId` | `${StackNamePrefix}-auth-${Stage}-CognitoUserPoolId` | `testpage` ビルド時の `NEXT_PUBLIC_USER_POOL_ID`、OpenAPI 生成時の `USER_POOL_ID` |
+| `CognitoUserPoolClientId` | `${StackNamePrefix}-auth-${Stage}-CognitoUserPoolClientId` | API Gateway JWT Audience、`NEXT_PUBLIC_USER_POOL_CLIENT_ID`、OpenAPI 生成時の `CLIENT_ID` |
 | `CognitoIssuer` | `${StackNamePrefix}-auth-${Stage}-CognitoIssuer` | API Gateway JWT Issuer |
 
-`document_cicd.yaml` はこれらの Export を `aws cloudformation list-exports` で取得し、`testpage` の静的ビルドと Swagger UI 用の認証設定に注入します。
+`api_cicd.yaml` と `document_cicd.yaml` は `aws cloudformation list-exports` でこれらの Export を取得し、API / OpenAPI / `testpage` の設定へ注入します。
 
 ## ブランチとステージ
 
@@ -62,14 +62,16 @@
 
 デプロイ時は `github.ref_name` をそのまま `Stage` に渡します。
 
-## API / フロントエンドとの接続
+## API / フロントエンド / OpenAPI との接続
 
 - [API](api.md) は `Fn::ImportValue` で `CognitoIssuer` と `CognitoUserPoolClientId` を読み込み、HTTP API の既定 Authorizer に設定します。
 - `testpage/components/AmplifyProvider.tsx` は User Pool ID と Client ID を受け取り、AWS Amplify の Cognito 設定に使います。
 - 認証済み画面では `fetchAuthSession()` から取得した ID トークンを `Authorization: Bearer ...` として API に渡します。
+- `api/lambda/src/bin/generate-openapi.rs` は `USER_POOL_ID` と `CLIENT_ID` から Cognito Authorizer の `issuer` / `audience` を組み立て、OpenAPI へ埋め込みます。
 
 ## 関連ページ
 
+- [README](README.md)
 - [FAQ](FAQ.md)
 - [API](api.md)
 - [CI/CD](cicd.md)
