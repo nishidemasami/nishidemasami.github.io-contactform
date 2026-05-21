@@ -2,7 +2,36 @@
 
 ## テストページのブラウザから API Gateway、Lambda、Aurora DSQL への流れは？
 
-![図1](plantuml/1.svg)
+```mermaid
+flowchart TD
+    %% タイトル
+    %% テスト環境のブラウザから API Gateway、Lambda、Aurora DSQL への流れ
+
+    User["利用者(ブラウザ)"]
+
+    subgraph FE["テスト用フロントエンド"]
+        CF["Cloudflare Pages"]
+        TP["testpage<br/>(Next.js static export)"]
+    end
+
+    subgraph Auth["認証基盤"]
+        Cognito["Cognito User Pool"]
+    end
+
+    subgraph BE["バックエンド"]
+        APIGW["API Gateway v2"]
+        Lambda["Rust Lambda"]
+        DB["Aurora DSQL"]
+    end
+
+    User -->|HTTPS| CF
+    CF -->|静的配信| TP
+    TP -->|"Amplify Auth<br/>(USER_SRP_AUTH)"| Cognito
+    TP -->|Bearer JWT付きの<br/>GET/POST /inquiries| APIGW
+    APIGW -->|JWT 検証| Cognito
+    APIGW -->|ルーティング| Lambda
+    Lambda -->|crudrole ロールで<br/>SELECT / INSERT| DB
+```
 
 補足:
 
