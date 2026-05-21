@@ -125,7 +125,7 @@ SAM テンプレートは次の Outputs を公開します。
 
 | Output | 用途 |
 | --- | --- |
-| `HttpApiUrl` | `https://${HttpApi}.execute-api.ap-northeast-3.amazonaws.com` を出力し、Export 名 `${AWS::StackName}-HttpApiUrl-${Stage}` で配布します。 |
+| `HttpApiUrl` | `https://${HttpApi}.execute-api.ap-northeast-3.amazonaws.com` を出力し、Export 名 `${AWS::StackName}-HttpApiUrl-${Stage}` で配布します。OpenAPI 生成時の `API_ENDPOINT` として利用されます。 |
 | `HttpApiId` | API ID を出力し、Export 名 `${AWS::StackName}-HttpApiId-${Stage}` で配布します。 |
 
 主な依存関係は次の通りです。
