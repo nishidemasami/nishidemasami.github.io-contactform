@@ -28,6 +28,7 @@ jobs:
       - name: pnpm setup & configure pnpm global bin path
         run: |
           pnpm setup
+          source ~/.bashrc
           echo "$(pnpm bin -g)" >> "$GITHUB_PATH"
 
       - name: Install GitHub Copilot CLI
