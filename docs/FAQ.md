@@ -2,35 +2,39 @@
 
 ## テストページのブラウザから API Gateway、Lambda、Aurora DSQL への流れは？
 
-```mermaid
-flowchart TD
-    %% タイトル
-    %% テスト環境のブラウザから API Gateway、Lambda、Aurora DSQL への流れ
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontname Meiryo
+skinparam componentStyle rectangle
 
-    User["利用者(ブラウザ)"]
+title テスト環境のブラウザから API Gateway、Lambda、Aurora DSQL への流れ
 
-    subgraph FE["テスト用フロントエンド"]
-        CF["Cloudflare Pages"]
-        TP["testpage<br/>(Next.js static export)"]
-    end
+actor "利用者(ブラウザ)" as User
 
-    subgraph Auth["認証基盤"]
-        Cognito["Cognito User Pool"]
-    end
+package "テスト用フロントエンド" {
+  [Cloudflare Pages]
+  [testpage\n(Next.js static export)]
+}
 
-    subgraph BE["バックエンド"]
-        APIGW["API Gateway v2"]
-        Lambda["Rust Lambda"]
-        DB["Aurora DSQL"]
-    end
+package "認証基盤" {
+  [Cognito User Pool]
+}
 
-    User -->|HTTPS| CF
-    CF -->|静的配信| TP
-    TP -->|"Amplify Auth<br/>(USER_SRP_AUTH)"| Cognito
-    TP -->|Bearer JWT付きの<br/>GET/POST /inquiries| APIGW
-    APIGW -->|JWT 検証| Cognito
-    APIGW -->|ルーティング| Lambda
-    Lambda -->|crudrole ロールで<br/>SELECT / INSERT| DB
+package "バックエンド" {
+  [API Gateway v2]
+  [Rust Lambda]
+  [Aurora DSQL]
+}
+
+User --> "Cloudflare Pages" : HTTPS
+"Cloudflare Pages" --> "testpage\n(Next.js static export)" : 静的配信
+"testpage\n(Next.js static export)" --> "Cognito User Pool" : Amplify Auth\n(USER_SRP_AUTH)
+"testpage\n(Next.js static export)" --> "API Gateway v2" : Bearer JWT 付きの\n GET/POST /inquiries
+"API Gateway v2" --> "Cognito User Pool" : JWT 検証
+"API Gateway v2" --> "Rust Lambda" : ルーティング
+"Rust Lambda" --> "Aurora DSQL" : crudrole ロールで\n SELECT / INSERT
+@enduml
 ```
 
 補足:

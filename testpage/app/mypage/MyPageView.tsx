@@ -69,9 +69,11 @@ export function MyPageView({
               </label>
               
               <label htmlFor="show-id-token" className="cursor-pointer">
-                <input id="show-id-token" type="checkbox" className="peer" />
-                <span className="text-blue-500">IDトークンを表示</span>
-                <div className="mt-2 invisible peer-checked:visible">
+                <input id="show-id-token" type="checkbox" className="peer hidden" />
+                <div className="block peer-checked:hidden">
+                  <span className="text-blue-500 border border-gray-300 rounded-lg px-4 py-3 block peer-checked:hidden">IDトークンを表示</span>
+                </div>
+                <div className="hidden peer-checked:block">
                   <input
                     type="text"
                     onFocus={function(e: React.FocusEvent<HTMLInputElement>) {
