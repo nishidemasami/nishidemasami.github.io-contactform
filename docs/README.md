@@ -10,6 +10,7 @@
 - [認証](auth.md)
 - [データベース](db.md)
 - [CI/CD](cicd.md)
+- [AI開発](ai_development.md)
 - [更新ログ](log.md)
 
 ## 現在の構成
@@ -29,6 +30,7 @@
 - [認証](auth.md): Cognito のテンプレート、Outputs、API / testpage / OpenAPI との接続点を整理します。
 - [データベース](db.md): Aurora DSQL、Liquibase、DB ロール、SeaORM 生成フローを整理します。
 - [CI/CD](cicd.md): GitHub Actions 各ワークフローの役割、トリガー、生成物、Wiki 反映の流れを整理します。
+- [AI開発](ai_development.md): AI が担当する開発タスクと、承認フロー内での利用箇所を整理します。
 - [更新ログ](log.md): Wiki をいつ何の観点で更新したかを時系列で残します。
 
 ## 更新時の着眼点
