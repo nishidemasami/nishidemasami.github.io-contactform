@@ -37,7 +37,8 @@ curl -fsSL https://get.pnpm.io/install.sh | sh -
 - components
   - AmplifyProvider.tsx
 - next.config.js
-- package-lock.json
+- pnpm-lock.yaml
+- pnpm-workspace.yaml
 - package.json
 - postcss.config.js
 - stories

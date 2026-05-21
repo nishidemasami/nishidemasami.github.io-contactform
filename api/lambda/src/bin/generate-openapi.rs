@@ -93,15 +93,6 @@ impl Modify for SecurityAddon {
                         .build(),
                 ),
             );
-            components.add_security_scheme(
-                "BearerAuth",
-                SecurityScheme::Http(
-                    HttpBuilder::new()
-                        .scheme(HttpAuthScheme::Bearer)
-                        .bearer_format("JWT")
-                        .build(),
-                ),
-            );
         }
     }
 }
@@ -387,11 +378,11 @@ mod tests {
         let openapi = build_openapi("https://example.com".to_string());
         let value = serde_json::to_value(openapi).expect("should serialize openapi");
         assert_eq!(
-            value["components"]["securitySchemes"]["BearerAuth"]["type"],
+            value["components"]["securitySchemes"]["CognitoAuthorizer"]["type"],
             "http"
         );
         assert_eq!(
-            value["components"]["securitySchemes"]["BearerAuth"]["scheme"],
+            value["components"]["securitySchemes"]["CognitoAuthorizer"]["scheme"],
             "bearer"
         );
     }

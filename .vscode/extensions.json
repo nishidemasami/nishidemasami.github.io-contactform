@@ -4,6 +4,7 @@
         "rust-lang.rust-analyzer",
         "dustypomerleau.rust-syntax",
         "tamasfe.even-better-toml",
-        "eamodio.gitlens"
+        "eamodio.gitlens",
+        "github.vscode-github-actions"
     ]
 }
