@@ -8,7 +8,8 @@ API は `api/template.yaml` と `api/lambda/` で管理されています。AWS 
 - Lambda エントリーポイント: [`../api/lambda/src/main.rs`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/api/lambda/src/main.rs)
 - ハンドラー: [`../api/lambda/src/handlers.rs`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/api/lambda/src/handlers.rs)
 - DB 接続: [`../api/lambda/src/db.rs`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/api/lambda/src/db.rs)
-- レスポンス / リクエスト型: [`../api/lambda/src/models.rs`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/api/lambda/src/models.rs)
+- リクエスト / レスポンス型: [`../api/lambda/src/models.rs`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/api/lambda/src/models.rs)
+- OpenAPI 生成: [`../api/lambda/src/bin/generate-openapi.rs`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/api/lambda/src/bin/generate-openapi.rs)
 - 関連デプロイ: [CI/CD](cicd.md)
 
 ## インフラ構成
@@ -23,7 +24,7 @@ API は `api/template.yaml` と `api/lambda/` で管理されています。AWS 
 | Lambda IAM ロール | `crudrole-lambda-role-${Stage}` |
 | Stage | `develop`, `main`, `release` |
 
-Lambda の IAM ロールには `dsql:DbConnect` 権限があり、実行時は `create_db("crudrole", endpoint, region)` で Aurora DSQL に接続します。読み書き権限の詳細は [データベース](db.md) を参照してください。
+Lambda の IAM ロールには `dsql:DbConnect` 権限があり、実行時は `create_db("crudrole", endpoint, region)` で Aurora DSQL に接続します。DB ロールと IAM Grant の詳細は [データベース](db.md) を参照してください。
 
 ## 公開エンドポイント
 
@@ -103,6 +104,21 @@ Rust 側は `create_db("crudrole", endpoint, region)` で接続文字列を組�
 | 未対応メソッド | `405` | Lambda 側で明示的に返します。 |
 | DB 接続失敗、JSON 解析失敗、SELECT / INSERT 失敗など | `500` | ログ出力後に共通の内部エラーレスポンスを返します。 |
 
+## OpenAPI の扱い
+
+このリポジトリでは、**OpenAPI を API Gateway から逆エクスポートするのではなく、Rust コードから生成**しています。`api/lambda/src/bin/generate-openapi.rs` が `utoipa` で `GET /inquiries` と `POST /inquiries` の契約を組み立て、環境変数から次の値を受け取って YAML を出力します。
+
+| 環境変数 | 用途 |
+| --- | --- |
+| `API_ENDPOINT` | `servers[0].url` |
+| `USER_POOL_ID` | Cognito Issuer URL の組み立て |
+| `CLIENT_ID` | JWT audience |
+| `OPENAPI_OUTPUT` | 出力ファイルパス |
+
+`api_cicd.yaml` の `validate` と `export_openapi`、`document_cicd.yaml` の `validate` と `generate-api-docs` がこの生成処理を実行します。`export_openapi` ジョブは `api/openapi-${branch}.yaml` を生成して GitHub Release に添付し、`document_cicd.yaml` は同じ生成物を RapiDoc / Swagger UI / Redoc などの公開ドキュメントに流用します。
+
+> `api/template.yaml` の `DefinitionBody` には最小限の OpenAPI 断片もありますが、Wiki では **Rust 実装から生成される OpenAPI を現在の契約**として扱います。
+
 ## 出力値と依存関係
 
 SAM テンプレートは次の Outputs を公開します。
@@ -110,7 +126,7 @@ SAM テンプレートは次の Outputs を公開します。
 | Output | 用途 |
 | --- | --- |
 | `HttpApiUrl` | `https://${HttpApi}.execute-api.ap-northeast-3.amazonaws.com` を出力し、Export 名 `${AWS::StackName}-HttpApiUrl-${Stage}` で配布します。 |
-| `HttpApiId` | API ID を出力し、OpenAPI エクスポート時に使います。Export 名は `${AWS::StackName}-HttpApiId-${Stage}` です。 |
+| `HttpApiId` | API ID を出力し、Export 名 `${AWS::StackName}-HttpApiId-${Stage}` で配布します。 |
 
 主な依存関係は次の通りです。
 
@@ -118,14 +134,11 @@ SAM テンプレートは次の Outputs を公開します。
 | --- | --- | --- |
 | 認証 | Cognito Issuer / User Pool Client ID | [認証](auth.md) |
 | DB | `inquiries` テーブル、`crudrole`、`DSQLClusterEndpoint` | [データベース](db.md) |
-| CI/CD | `cargo check`、ローカル PostgreSQL + Liquibase による Rust テスト、SAM デプロイ、OpenAPI エクスポート | [CI/CD](cicd.md) |
-
-## OpenAPI について
-
-`api_cicd.yaml` の `export_openapi` ジョブは、デプロイ済み API Gateway から `api/openapi-${branch}.yaml` をエクスポートし、差分があれば Pull Request を作成します。つまり OpenAPI は手書きではなく、**デプロイ後の API Gateway 定義を CI がブランチ別ファイルへ取り込む** フローです。
+| CI/CD | `cargo check`、ローカル PostgreSQL + Liquibase による Rust テスト、OpenAPI 生成、SAM デプロイ、カバレッジ公開 | [CI/CD](cicd.md) |
 
 ## 関連ページ
 
+- [README](README.md)
 - [FAQ](FAQ.md)
 - [認証](auth.md)
 - [データベース](db.md)
