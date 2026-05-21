@@ -4,10 +4,10 @@
 
 データベース基盤は `infrastructure/liquibase_migrate/` で管理されています。AWS SAM で **Aurora DSQL クラスター** を作成し、Liquibase でスキーマを適用し、その結果をもとに GitHub Actions が `infrastructure/sea_orm/src/entity/` を再生成します。
 
-- テンプレート: [`../infrastructure/liquibase_migrate/template.yaml`](../infrastructure/liquibase_migrate/template.yaml)
-- 変更管理: [`../infrastructure/liquibase_migrate/changelog.xml`](../infrastructure/liquibase_migrate/changelog.xml)
-- 補足 README: [`../infrastructure/liquibase_migrate/README.md`](../infrastructure/liquibase_migrate/README.md)
-- SeaORM 生成物: [`../infrastructure/sea_orm/src/entity/`](../infrastructure/sea_orm/src/entity/)
+- テンプレート: [`../infrastructure/liquibase_migrate/template.yaml`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/infrastructure/liquibase_migrate/template.yaml)
+- 変更管理: [`../infrastructure/liquibase_migrate/changelog.xml`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/infrastructure/liquibase_migrate/changelog.xml)
+- 補足 README: [`../infrastructure/liquibase_migrate/README.md`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/infrastructure/liquibase_migrate/README.md)
+- SeaORM 生成物: [`../infrastructure/sea_orm/src/entity/`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/infrastructure/sea_orm/src/entity/)
 - 自動化: [CI/CD](cicd.md)
 
 ## DSQL クラスター
@@ -77,7 +77,7 @@
 - `develop` / `main` / `release`: Aurora DSQL 向けの `CREATE INDEX ASYNC` と `AWS IAM GRANT` を含む変更を実行します。
 - `local`: 通常の PostgreSQL で実行できる `CREATE INDEX` のみを使い、Aurora DSQL 専用構文を避けます。API の CI 検証ではこの `local` コンテキストを使います。
 
-ローカル開発手順は [`../infrastructure/liquibase_migrate/README.md`](../infrastructure/liquibase_migrate/README.md) にあります。
+ローカル開発手順は [`../infrastructure/liquibase_migrate/README.md`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/infrastructure/liquibase_migrate/README.md) にあります。
 
 ## SeaORM 連携
 

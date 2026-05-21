@@ -28,16 +28,13 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+      - run: corepack enable
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: aws-actions/setup-sam@v3
         with:
-          python-version: '3.13'
-
-      - name: Install SAM CLI
-        run: |
-          pip install aws-sam-cli
+          use-installer: true
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Validate SAM template
         run: |
@@ -66,31 +63,38 @@ jobs:
         run: cargo doc --no-deps
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: testpage/package-lock.json
+          cache: 'pnpm'
+          cache-dependency-path: testpage/pnpm-lock.yaml
+
+      - name: Check pnpm version
+        run: pnpm -v
 
       - name: Install testpage dependencies
         working-directory: testpage
-        run: npm ci
+        run: pnpm i --frozen-lockfile
 
       - name: Lint
         working-directory: testpage
-        run: npm run lint
+        run: pnpm run lint
+
+      - name: Type Check
+        working-directory: testpage
+        run: pnpm exec tsc --noEmit -p tsconfig.json
 
       - name: Install TypeDoc
         working-directory: testpage
-        run: npm install --save-dev typedoc
+        run: pnpm install --save-dev typedoc
 
       - name: Generate testpage documentation
         working-directory: testpage
-        run: npx typedoc --out ../_output/raw/testpage --entryPointStrategy expand app components
+        run: pnpm exec typedoc --out ../_output/raw/testpage --entryPointStrategy expand app components
 
       - name: Build Storybook
         working-directory: testpage
-        run: npm run build-storybook
+        run: pnpm run build-storybook
 
       - name: Generate SVG from PlantUML files
         working-directory: docs/plantuml
@@ -102,7 +106,7 @@ jobs:
           NEXT_PUBLIC_USER_POOL_ID: placeholder
           NEXT_PUBLIC_USER_POOL_CLIENT_ID: placeholder
           NEXT_PUBLIC_API_ENDPOINT: https://placeholder.execute-api.ap-northeast-3.amazonaws.com
-        run: npm run build
+        run: pnpm run build
 
   generate-api-docs:
     name: Generate API Lambda Documentation
@@ -118,9 +122,10 @@ jobs:
     if: github.event_name != 'pull_request'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+      - run: corepack enable
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -141,27 +146,27 @@ jobs:
           cp -r api/lambda/target/doc/* _output/raw/api/
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: testpage/package-lock.json
+          cache: 'pnpm'
+          cache-dependency-path: testpage/pnpm-lock.yaml
 
       - name: Install testpage dependencies
         working-directory: testpage
-        run: npm ci
+        run: pnpm i --frozen-lockfile
 
       - name: Install TypeDoc
         working-directory: testpage
-        run: npm install --save-dev typedoc
+        run: pnpm install --save-dev typedoc
 
       - name: Generate testpage documentation
         working-directory: testpage
-        run: npx typedoc --out ../_output/raw/testpage --entryPointStrategy expand app components
+        run: pnpm exec typedoc --out ../_output/raw/testpage --entryPointStrategy expand app components
 
       - name: Build Storybook
         working-directory: testpage
-        run: npm run build-storybook
+        run: pnpm run build-storybook
 
       - name: Copy Storybook to _output
         run: |
@@ -201,14 +206,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: aws-actions/setup-sam@v3
         with:
-          python-version: '3.14'
-
-      - name: Install SAM CLI
-        run: |
-          pip install aws-sam-cli
+          use-installer: true
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get Cognito and API endpoint values
         id: cognito
@@ -341,20 +342,19 @@ jobs:
         run: |
           mkdir -p _output/raw/swaggerui
           cp api/openapi-${{ github.ref_name }}.yaml _output/raw/swaggerui/
-          npm install --prefix /tmp/swagger-ui-dist swagger-ui-dist@5.32.5
-          SWAGGER_DIST=/tmp/swagger-ui-dist/node_modules/swagger-ui-dist
-          cp -r "$SWAGGER_DIST"/* _output/raw/swaggerui/
+          pnpm dlx npm pack swagger-ui-dist@latest
+          tar -xzf swagger-ui-dist-*.tgz --strip-components=1 -C _output/raw/swaggerui
           sed -i 's|https://petstore.swagger.io/v2/swagger.json|./openapi-${{ github.ref_name }}.yaml|g' _output/raw/swaggerui/swagger-initializer.js
           
       - name: Generate RapiDoc HTML
         run: |
           mkdir -p _output/raw/rapidoc
           cp api/openapi-${{ github.ref_name }}.yaml _output/raw/rapidoc/
-          echo '<!doctype html><meta charset="utf-8"><script src="https://unpkg.com/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script><script src="https://unpkg.com/rapidoc@9.3.8/dist/rapidoc-min.js"></script><body><rapi-doc style="visibility: visible" id="doc" spec-url="https://ngicf-testpage.pages.dev/raw/rapidoc/openapi-${{ github.ref_name }}.yaml" render-style="read" allow-try="true" allow-authentication="true" persist-auth="true" theme="dark" show-header="false" api-key-name="Authorization" api-key-location="header" api-key-value="eyJ..."><div slot="nav-logo"><h4>認証<div id="ninsho"><div><input id="email" placeholder="email"> <input id="password" type="password" placeholder="password"> <button onclick="login()">Login</button></div></div><h4>検索</h4></div></rapi-doc><script>const poolData={UserPoolId:"${{ steps.cognito.outputs.USER_POOL_ID }}",ClientId:"${{ steps.cognito.outputs.CLIENT_ID }}"},userPool=new AmazonCognitoIdentity.CognitoUserPool(poolData);function login(){const e=document.getElementById("email").value,o={Username:e,Password:document.getElementById("password").value},t=new AmazonCognitoIdentity.AuthenticationDetails(o),n={Username:e,Pool:userPool};new AmazonCognitoIdentity.CognitoUser(n).authenticateUser(t,{onSuccess:function(e){const o=e.getIdToken().getJwtToken();document.getElementById("doc").setAttribute("api-key-value",o),console.log("login success"),document.getElementById("doc").style.visibility="visible",document.getElementById("ninsho").style.display="none"},onFailure:function(e){console.error(e)}})}</script></body></html>' > _output/raw/rapidoc/index.html
+          echo '<!doctype html><meta charset="utf-8"><script src="https://unpkg.com/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script><script src="https://unpkg.com/rapidoc@9.3.8/dist/rapidoc-min.js"></script><body><rapi-doc style="visibility: visible" id="doc" spec-url="./openapi-${{ github.ref_name }}.yaml" render-style="read" allow-try="true" allow-authentication="true" persist-auth="true" theme="dark" show-header="false" api-key-name="Authorization" api-key-location="header" api-key-value="eyJ..."></rapi-doc></body></html>' > _output/raw/rapidoc/index.html
 
       - name: Install dependencies
         working-directory: testpage
-        run: npm ci
+        run: pnpm i --frozen-lockfile
 
       - name: Build Next.js
         working-directory: testpage
@@ -362,7 +362,7 @@ jobs:
           NEXT_PUBLIC_USER_POOL_ID: ${{ steps.cognito.outputs.USER_POOL_ID }}
           NEXT_PUBLIC_USER_POOL_CLIENT_ID: ${{ steps.cognito.outputs.CLIENT_ID }}
           NEXT_PUBLIC_API_ENDPOINT: ${{ steps.cognito.outputs.API_ENDPOINT }}
-        run: npm run build
+        run: pnpm run build
 
       - name: Copy documentation to _output
         run: |
@@ -385,32 +385,24 @@ jobs:
             })
             core.setOutput('deployment_id', res.data.id)
 
-
-      - name: Install Wrangler CLI
-        run: npm install wrangler --save-dev
-
-      - name: Deploy to Cloudflare Pages
-        id: pages_deploy
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNTID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_APITOKEN }}
+      - name: Generate 404 page
         run: |
-          npx wrangler pages deploy _output \
-            --project-name=${{ secrets.CLOUDFLARE_PROJECTNAME }} \
-            2>&1 | tee wrangler.log
-          
-      - name: Extract Pages URL
-        id: extract_url
-        run: |
-          URL=$(grep -oE 'https://[a-z0-9-]+\.${{ secrets.CLOUDFLARE_PROJECTNAME }}\.pages\.dev' wrangler.log | head -n1)
-          echo "pages_url=$URL" >> "$GITHUB_OUTPUT"
+          [ -f _output/404.html ] || cp _static/404.html _output/404.html
+
+      - name: Deploy CloudFlare Pages
+        id: deploy_pages
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_APITOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNTID }}
+          command: pages deploy _output  --project-name=${{ secrets.CLOUDFLARE_PROJECTNAME }}
 
       # Note: You need to configure the workflow permissions to allow GitHub Actions to create Deployments. This can be done in the repository settings under Actions > General > Workflow permissions.
       # Workflow permissions
       # ✔Read and write permissions
       - name: Output CloudFlare Pages URL
         run: |
-          echo "Document URL: ${{ steps.extract_url.outputs.pages_url }}"
+          echo "Document URL: ${{ steps.deploy_pages.outputs.deployment-url }}"
       - name: Create GitHub Deployment
         if: success()
         uses: actions/github-script@v7
@@ -421,7 +413,7 @@ jobs:
               repo: context.repo.repo,
               deployment_id: ${{ steps.create_deployment.outputs.deployment_id }},
               state: 'success',
-              environment_url: '${{ steps.extract_url.outputs.pages_url }}'
+              environment_url: '${{ steps.deploy_pages.outputs.deployment-url }}'
             })
       - name: Mark deployment failure
         if: failure()

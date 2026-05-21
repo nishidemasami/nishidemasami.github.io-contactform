@@ -1,5 +1,10 @@
 {
     "recommendations": [
-        "eamodio.gitlens"
+        "fill-labs.dependi",
+        "rust-lang.rust-analyzer",
+        "dustypomerleau.rust-syntax",
+        "tamasfe.even-better-toml",
+        "eamodio.gitlens",
+        "github.vscode-github-actions"
     ]
 }

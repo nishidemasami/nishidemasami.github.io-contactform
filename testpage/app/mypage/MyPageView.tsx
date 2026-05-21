@@ -9,16 +9,19 @@ import Link from 'next/link';
  * StorybookなどでUIを独立してテストするために使用します。
  *
  * @param email - ログイン中のユーザーのメールアドレス
+ * @param idToken - ログイン中のユーザーのidToken
  * @param signingOut - ログアウト処理中かどうか
  * @param onSignOut - ログアウトボタンのクリックハンドラ
  * @returns マイページダッシュボードUI
  */
 export function MyPageView({
   email,
+  idToken,
   signingOut,
   onSignOut,
 }: {
   email: string;
+  idToken: string;
   signingOut: boolean;
   onSignOut: () => void;
 }) {
@@ -26,7 +29,7 @@ export function MyPageView({
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <header className="bg-white shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-800">Inquiry Management</h1>
+          <h1 className="text-xl font-bold text-gray-800">テストページ</h1>
           <button
             onClick={onSignOut}
             disabled={signingOut}
@@ -39,9 +42,47 @@ export function MyPageView({
 
       <main className="max-w-5xl mx-auto px-4 py-10">
         <div className="bg-white rounded-2xl shadow-md p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">マイページ</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">デバッグ情報</h2>
           <p className="text-gray-500">
-            ログイン中：<span className="font-medium text-gray-700">{email}</span>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                メールアドレス
+              </label>
+              <input
+                id="email"
+                type="text"
+                onFocus={function(e: React.FocusEvent<HTMLInputElement>) {
+                  e.currentTarget.select(); 
+                }}
+                readOnly
+                value={email}
+                className="text-ellipsis w-full px-4 py-3 border text-blue-900 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              />
+          </p>
+          <p className="text-gray-500">
+              <label
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                IDトークン※取り扱い注意⚠️
+              </label>
+              
+              <label htmlFor="show-id-token" className="cursor-pointer">
+                <input id="show-id-token" type="checkbox" className="peer" />
+                <span className="text-blue-500">IDトークンを表示</span>
+                <div className="mt-2 invisible peer-checked:visible">
+                  <input
+                    type="text"
+                    onFocus={function(e: React.FocusEvent<HTMLInputElement>) {
+                      e.currentTarget.select(); 
+                    }}
+                    readOnly
+                    value={idToken}
+                    className="text-ellipsis w-full px-4 py-3 border text-blue-900 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  />
+                </div>
+              </label>
           </p>
         </div>
 

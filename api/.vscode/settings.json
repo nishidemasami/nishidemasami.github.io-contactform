@@ -1,6 +1,0 @@
-{
-  "rust-analyzer.linkedProjects": [
-    "api/lambda/Cargo.toml"
-  ],
-  "editor.wordWrap": "on",
-}

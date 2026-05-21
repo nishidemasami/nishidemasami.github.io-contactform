@@ -70,11 +70,6 @@ components:
       - inquiries
       type: object
   securitySchemes:
-    BearerAuth:
-      bearerFormat: JWT
-      description: JWTによるBearerトークン認証
-      scheme: bearer
-      type: http
     CognitoAuthorizer:
       bearerFormat: JWT
       scheme: bearer

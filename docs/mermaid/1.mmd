@@ -1,0 +1,33 @@
+flowchart LR
+    User[ユーザ]
+
+    subgraph FE["フロントエンド"]
+        CloudFront[CloudFront]
+        S3[S3]
+    end
+
+    subgraph Auth["認証基盤"]
+        Cognito[Cognito]
+    end
+
+    subgraph BE["バックエンド"]
+        APIGW["API Gateway"]
+        Lambda[Lambda]
+    end
+
+    subgraph DB["DB"]
+        DynamoDB[DynamoDB]
+        Aurora["Aurora DSQL"]
+    end
+
+    User -->|HTTPS| CloudFront
+    User -->|認証| Cognito
+    CloudFront -->|静的コンテンツ| S3
+
+    User -->|APIリクエスト| APIGW
+    APIGW -->|実行| Lambda
+
+    Lambda -->|データの登録・更新| DynamoDB
+    Lambda -->|データの登録・更新| Aurora
+
+    APIGW -->|認証検証| Cognito

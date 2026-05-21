@@ -4,11 +4,11 @@
 
 API は `api/template.yaml` と `api/lambda/` で管理されています。AWS SAM テンプレートが **HTTP API Gateway / Cognito JWT Authorizer / Rust Lambda / Lambda 実行ロール** を定義し、Rust 側は `main.rs` から `handlers.rs` と `db.rs` を呼び出して `/inquiries` を処理します。
 
-- SAM テンプレート: [`../api/template.yaml`](../api/template.yaml)
-- Lambda エントリーポイント: [`../api/lambda/src/main.rs`](../api/lambda/src/main.rs)
-- ハンドラー: [`../api/lambda/src/handlers.rs`](../api/lambda/src/handlers.rs)
-- DB 接続: [`../api/lambda/src/db.rs`](../api/lambda/src/db.rs)
-- レスポンス / リクエスト型: [`../api/lambda/src/models.rs`](../api/lambda/src/models.rs)
+- SAM テンプレート: [`../api/template.yaml`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/api/template.yaml)
+- Lambda エントリーポイント: [`../api/lambda/src/main.rs`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/api/lambda/src/main.rs)
+- ハンドラー: [`../api/lambda/src/handlers.rs`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/api/lambda/src/handlers.rs)
+- DB 接続: [`../api/lambda/src/db.rs`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/api/lambda/src/db.rs)
+- レスポンス / リクエスト型: [`../api/lambda/src/models.rs`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/api/lambda/src/models.rs)
 - 関連デプロイ: [CI/CD](cicd.md)
 
 ## インフラ構成
