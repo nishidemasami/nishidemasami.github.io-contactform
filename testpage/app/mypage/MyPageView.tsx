@@ -65,15 +65,22 @@ export function MyPageView({
               >
                 IDトークン※取り扱い注意⚠️
               </label>
-              <input
-                type="text"
-                onFocus={function(e: React.FocusEvent<HTMLInputElement>) {
-                  e.currentTarget.select(); 
-                }}
-                readOnly
-                value={idToken}
-                className="text-ellipsis w-full px-4 py-3 border text-blue-900 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
+              
+              <label className="cursor-pointer">
+                <input type="checkbox" className="peer" />
+                <span className="text-blue-500">IDトークンを表示</span>
+                <div className="mt-2 invisible peer-checked:visible">
+                  <input
+                    type="text"
+                    onFocus={function(e: React.FocusEvent<HTMLInputElement>) {
+                      e.currentTarget.select(); 
+                    }}
+                    readOnly
+                    value={idToken}
+                    className="text-ellipsis w-full px-4 py-3 border text-blue-900 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  />
+                </div>
+              </label>
           </p>
         </div>
 

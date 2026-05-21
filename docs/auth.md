@@ -4,8 +4,8 @@
 
 認証基盤は `infrastructure/auth/template.yaml` の AWS SAM テンプレートで管理され、Amazon Cognito の **User Pool** と **User Pool Client** を `develop` / `main` / `release` 環境向けに定義します。
 
-- テンプレート: [`../infrastructure/auth/template.yaml`]((https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/infrastructure/auth/template.yaml)
-- 補足 README: [`../infrastructure/auth/README.md`]((https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/infrastructure/auth/README.md)
+- テンプレート: [`../infrastructure/auth/template.yaml`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/infrastructure/auth/template.yaml)
+- 補足 README: [`../infrastructure/auth/README.md`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/infrastructure/auth/README.md)
 - 関連デプロイ: [CI/CD](cicd.md)
 
 ## デプロイ対象

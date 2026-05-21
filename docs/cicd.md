@@ -6,11 +6,11 @@ GitHub Actions は `.github/workflows/` 配下で管理され、現在は **API 
 
 | ワークフロー | 目的 | 主なソース |
 | --- | --- | --- |
-| `api_cicd.yaml` | API の検証、デプロイ、OpenAPI エクスポート | [`../.github/workflows/api_cicd.yaml`]((https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/.github/workflows/api_cicd.yaml) |
-| `cognito_cicd.yaml` | Cognito SAM テンプレートの検証とデプロイ | [`../.github/workflows/cognito_cicd.yaml`]((https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/.github/workflows/cognito_cicd.yaml) |
-| `db_migrate.yaml` | DSQL デプロイ、Liquibase 実行、SeaORM 生成 | [`../.github/workflows/db_migrate.yaml`]((https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/.github/workflows/db_migrate.yaml) |
-| `document_cicd.yaml` | Honkit / Storybook / TypeDoc / testpage の生成と Cloudflare Pages 配信 | [`../.github/workflows/document_cicd.yaml`]((https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/.github/workflows/document_cicd.yaml) |
-| `update-wiki.yml` | Copilot CLI による `docs/` 更新と PR 作成 | [`../.github/workflows/update-wiki.yml`]((https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/.github/workflows/update-wiki.yml) |
+| `api_cicd.yaml` | API の検証、デプロイ、OpenAPI エクスポート | [`../.github/workflows/api_cicd.yaml`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/.github/workflows/api_cicd.yaml) |
+| `cognito_cicd.yaml` | Cognito SAM テンプレートの検証とデプロイ | [`../.github/workflows/cognito_cicd.yaml`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/.github/workflows/cognito_cicd.yaml) |
+| `db_migrate.yaml` | DSQL デプロイ、Liquibase 実行、SeaORM 生成 | [`../.github/workflows/db_migrate.yaml`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/.github/workflows/db_migrate.yaml) |
+| `document_cicd.yaml` | Honkit / Storybook / TypeDoc / testpage の生成と Cloudflare Pages 配信 | [`../.github/workflows/document_cicd.yaml`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/.github/workflows/document_cicd.yaml) |
+| `update-wiki.yml` | Copilot CLI による `docs/` 更新と PR 作成 | [`../.github/workflows/update-wiki.yml`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/.github/workflows/update-wiki.yml) |
 
 ## 実行契機
 
