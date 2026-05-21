@@ -25,8 +25,9 @@ jobs:
       - name: Enable pnpm via Corepack
         run: corepack enable pnpm
 
-      - name: Configure pnpm global bin path
+      - name: pnpm setup & configure pnpm global bin path
         run: |
+          pnpm setup
           echo "$(pnpm bin -g)" >> "$GITHUB_PATH"
 
       - name: Install GitHub Copilot CLI
