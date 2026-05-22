@@ -15,6 +15,9 @@
         "left": 40 
       }
     },
+    "styles": {
+      "website": "styles/website.css"
+    },
     "uml": {
       "charset" : "UTF-8"
     },
