@@ -13,26 +13,44 @@
 ```plantuml
 @startuml
 skinparam backgroundColor transparent
-skinparam defaultFontname Meiryo
+''skinparam defaultFontname Meiryo
 skinparam componentStyle rectangle
 
-title 開発フローと AI 利用箇所
+title 図：承認フロー内での AI 利用箇所
 
-start
+|#palegreen|人間作業|
+
 :要件・課題の確認;
-:AI によるプログラム実装;
-:AI による IaC 編集;
-:AI によるテスト作成;
-:AI によるドキュメント作成・更新;
-:AI によるレビュー;
-:人間による確認・承認;
-if (承認されたか？) then (Yes)
-  :マージ・デプロイ;
-  stop
-else (No)
-  :差し戻し;
-  :AI で修正;
-  -> :人間による確認・承認;
-endif
+:Issueの新規作成;
+
+|#aqua|CICD| CI / CD
+repeat :Issueの新規作成・差し戻しの検知;
+:AIへIssueをアサイン;
+
+|#AntiqueWhite|AI作業|
+:作業開始;
+:IaC作成;
+note right: 例：\nAWS:CloudFormation\nAzure:Resource Manager\nGCP:TerraForm on GCP\n等
+:プログラミング実装\n自動テスト作成;
+:ドキュメント作成;
+note right: 例：\nJava:JavaDoc\nRust:RustDoc\nTypeScript:TypeDoc\nAPI:OpenAPI(Swagger)\n等
+:プルリクエスト作成;
+|CICD|
+:静的コード解析\n(結果をプルリクエストに添付);
+note right: 例：\nJava:FindBugs\nRust:Clippy\nTypeScript:ESLint\n等
+:自動テスト実施\n(結果をプルリクエストに添付);
+note right: 例：\nJenkins\nGitHub Actions\n等
+:AIへコードレビューをアサイン;
+|AI作業|
+:コードレビュー(AI);
+|人間作業|
+repeatwhile (\nコードレビュー(人間)\n・静的コード解析結果の確認\n・自動テスト結果の確認\n・ドキュメントの確認\n・手動テスト実施(必要に応じて)\n) is (NG：\n差し戻し)
+-> OK：\nプルリクエストの承認;
+:マージ;
+|CICD|
+:デプロイ;
+|人間作業|
+:デプロイ結果の確認;
+:手動テスト実施(必要に応じて);
 @enduml
 ```

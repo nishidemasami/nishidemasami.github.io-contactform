@@ -1,3 +1,7 @@
 .markdown-section svg * {
     font-size: small !important;
 }
+svg:not(:root) {
+    width: stretch !important;
+    height: auto !important;
+}
