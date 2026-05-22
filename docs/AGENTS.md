@@ -73,9 +73,9 @@ This document is intentionally abstract. It describes the idea, not a specific i
 ## Tasks
 
 - All content in the `/docs/` directory (except this file) should be written in Japanese.
-- For API raw sources, refer to `/api/*` and create `/docs/api.md`. If necessary, create `/docs/api/*.md` and link to them from `/docs/api.md`.
-- For CI/CD raw sources, refer to `/.github/workflows/*.yaml` and create `/docs/cicd.md`. If necessary, create `/docs/cicd/*.md` and link to them from `/docs/cicd.md`.
-- For Auth raw sources, refer to `/infrastructure/auth/*` and create `/docs/auth.md`. If necessary, create `/docs/auth/*.md` and link to them from `/docs/auth.md`.
-- Refer to `/infrastructure/liquibase_migrate/*` for the raw database sources and create `/docs/db.md`. If necessary, create `/docs/db/*.md` and link to them from `/docs/db.md`.
-- Create a table of contents in `/docs/SUMMARY.md`. Clearly create links to each top page (to ensure a route that allows access to at least each page).
-- Create a cover page in `/docs/README.md`. `/docs/index.md` is not needed as the README is used as the index. This is also because Honkit (Gitbook) is used.
+- For API raw sources, refer to `/api/*` and edit `/docs/api.md`.
+- For CI/CD raw sources, refer to `/.github/workflows/*.yaml` and edit `/docs/cicd.md`.
+- For Auth raw sources, refer to `/infrastructure/auth/*` and edit `/docs/auth.md`.
+- Refer to `/infrastructure/liquibase_migrate/*` for the raw database sources and edit `/docs/db.md`.
+- If necessary, fix a table of contents page `/docs/SUMMARY.md`.
+- If necessary, fix a cover page in `/docs/README.md`. `/docs/index.md` is not needed as the README is used as the index. This is also because Honkit (Gitbook) is used.

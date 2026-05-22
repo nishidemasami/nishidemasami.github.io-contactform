@@ -1,8 +1,41 @@
 # FAQ
 
-## テスト環境のブラウザから API Gateway、Lambda、Aurora DSQL への流れは？
+## テストページのブラウザから API Gateway、Lambda、Aurora DSQL への流れは？
 
-![図１](plantuml/1.svg)
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam defaultFontname Meiryo
+skinparam componentStyle rectangle
+
+title テスト環境のブラウザから API Gateway、Lambda、Aurora DSQL への流れ
+
+actor "利用者(ブラウザ)" as User
+
+package "テスト用フロントエンド" {
+  [Cloudflare Pages]
+  [testpage\n(Next.js static export)]
+}
+
+package "認証基盤" {
+  [Cognito User Pool]
+}
+
+package "バックエンド" {
+  [API Gateway v2]
+  [Rust Lambda]
+  [Aurora DSQL]
+}
+
+User --> "Cloudflare Pages" : HTTPS
+"Cloudflare Pages" --> "testpage\n(Next.js static export)" : 静的配信
+"testpage\n(Next.js static export)" --> "Cognito User Pool" : Amplify Auth\n(USER_SRP_AUTH)
+"testpage\n(Next.js static export)" --> "API Gateway v2" : Bearer JWT 付きの\n GET/POST /inquiries
+"API Gateway v2" --> "Cognito User Pool" : JWT 検証
+"API Gateway v2" --> "Rust Lambda" : ルーティング
+"Rust Lambda" --> "Aurora DSQL" : crudrole ロールで\n SELECT / INSERT
+@enduml
+```
 
 補足:
 
@@ -19,6 +52,18 @@
 公開ドキュメントを Cloudflare Pages へ配信するのは [CI/CD](cicd.md) の `document_cicd.yaml` ですが、このワークフローは `docs/**` を監視していません。現状の自動トリガーは `.github/workflows/document_cicd.yaml` と `testpage/**` の変更、または手動実行だけです。
 
 そのため、`docs/` だけを更新した場合は Wiki の内容自体は Git に残っても、公開ページへ反映するには `document_cicd.yaml` を手動実行する必要があります。
+
+## OpenAPI はどこを正として更新されますか？
+
+現在の OpenAPI は API Gateway からの逆エクスポートではなく、`api/lambda/src/bin/generate-openapi.rs` が Rust コードから生成します。`api_cicd.yaml` と `document_cicd.yaml` が `API_ENDPOINT`、`USER_POOL_ID`、`CLIENT_ID` を与えて `cargo run --features openapi --bin generate-openapi` を実行し、`api/openapi.yaml` や `api/openapi-${branch}.yaml` を出力します。
+
+そのため、契約変更が入ったときは [API](api.md) と [CI/CD](cicd.md) を一緒に見直すと追跡しやすくなります。
+
+## 公開されるトップページの README とリポジトリ内の `docs/README.md` が少し違うことがあるのはなぜですか？
+
+`document_cicd.yaml` は Honkit をビルドする直前に、`docs/README.md` の末尾へ公開リンクを `echo` で追記します。追記先にはコメントで「この行以降は自動でリンクが挿入される」と明記されており、公開ページにはその時点のリンク一覧が含まれます。
+
+一方、リポジトリにコミットされる `docs/README.md` にはその追記は残さない運用なので、公開ページの末尾リンクだけが増えて見えることがあります。
 
 ## この構成で AWS の「マネージド」「スケーラブル」「Scale to Zero」をどう実現していますか？
 

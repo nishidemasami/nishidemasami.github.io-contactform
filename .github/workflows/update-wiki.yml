@@ -17,17 +17,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Enable pnpm via Corepack
-        run: corepack enable
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24'
-          cache: 'pnpm'
+          node-version: '26'
 
       - name: Install GitHub Copilot CLI
-        run: pnpm install -g @github/copilot
+        run: pnpm add -g @github/copilot
 
       # Note: You need to create a personal access token with repo scope and add it as a secret named COPILOT_GITHUB_TOKEN in your repository settings.
       # https://github.com/settings/personal-access-tokens/new
@@ -43,7 +43,7 @@ jobs:
             echo "Error: docs/AGENTS.md not found" >&2
             exit 1
           fi
-          copilot -p "task Review and update the wiki files under docs/ based on the instructions in docs/AGENTS.md. Maintain consistency, update cross-references, and keep all pages current." --allow-tool='write'
+          pnpm exec copilot -p "task Review and update the wiki files under docs/ based on the instructions in docs/AGENTS.md. Maintain consistency, update cross-references, and keep all pages current." --allow-tool='write'
 
       # Note: You need to configure the workflow permissions to allow GitHub Actions to create and approve pull requests. This can be done in the repository settings under Actions > General > Workflow permissions.
       # Workflow permissions

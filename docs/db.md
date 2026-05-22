@@ -30,6 +30,8 @@
 | `inquiries` | `id`, `cognito_sub`, `email`, `subject`, `body`, `reply`, `respondent`, `created_at`, `reply_at` | 問い合わせ保存と返信管理 |
 | `users` | `id`, `cognito_sub`, `email`, `username`, `hashed_password`, `created_at` | ユーザー情報保存 |
 
+現行の API / `testpage` が直接使っているのは `inquiries` テーブルです。`users` テーブルはスキーマには存在しますが、今回参照したソースには利用コードが見当たりません。
+
 ### インデックス
 
 | インデックス | 対象 | 目的 |
@@ -75,15 +77,15 @@
 ## コンテキスト
 
 - `develop` / `main` / `release`: Aurora DSQL 向けの `CREATE INDEX ASYNC` と `AWS IAM GRANT` を含む変更を実行します。
-- `local`: 通常の PostgreSQL で実行できる `CREATE INDEX` のみを使い、Aurora DSQL 専用構文を避けます。API の CI 検証ではこの `local` コンテキストを使います。
+- `local`: 通常の PostgreSQL で実行できる変更だけを適用し、Aurora DSQL 専用構文を避けます。API の CI 検証とローカル DB テストではこの `local` コンテキストを使います。
 
 ローカル開発手順は [`../infrastructure/liquibase_migrate/README.md`](https://github.com/nishidemasami/nishidemasami.github.io-contactform/blob/main/infrastructure/liquibase_migrate/README.md) にあります。
 
 ## SeaORM 連携
 
-`db_migrate.yaml` の `generate` ジョブは `sea-orm-cli generate entity` を実行し、`infrastructure/sea_orm/src/entity/` を更新します。`inquiries.rs` でも `reply` / `respondent` / `reply_at` を含む現在のテーブル定義が反映されています。
+`db_migrate.yaml` の `generate` ジョブは `sea-orm-cli generate entity` を実行し、`infrastructure/sea_orm/src/entity/` を更新します。差分があれば専用ブランチを作り、対象ブランチ向け Pull Request を自動作成します。
 
-Wiki 側では、**Liquibase 変更セットと SeaORM 生成物が CI で同期される構成**として扱うのが現在の実態です。
+`inquiries.rs` には `reply` / `respondent` / `reply_at` を含む現在のテーブル定義が反映され、`users.rs` には `users` テーブル定義が反映されています。
 
 ## API との接続
 
@@ -93,6 +95,7 @@ Wiki 側では、**Liquibase 変更セットと SeaORM 生成物が CI で同期
 
 ## 関連ページ
 
+- [README](README.md)
 - [FAQ](FAQ.md)
 - [API](api.md)
 - [CI/CD](cicd.md)

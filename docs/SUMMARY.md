@@ -1,9 +1,10 @@
 # 目次
 
-- [Wiki トップ](README.md)
-- [FAQ](FAQ.md)
-- [API](api.md)
-- [認証](auth.md)
-- [データベース](db.md)
-- [CI/CD](cicd.md)
-- [更新ログ](log.md)
+- [Wiki トップ](README.md) - この Wiki 全体の入口と更新時の着眼点
+- [FAQ](FAQ.md) - 構成全体の接続関係と運用上の注意
+- [API](api.md) - `/inquiries` API、Lambda 実装、OpenAPI 生成
+- [認証](auth.md) - Cognito User Pool / App Client と Outputs
+- [データベース](db.md) - Aurora DSQL、Liquibase、SeaORM 生成
+- [CI/CD](cicd.md) - GitHub Actions のトリガー、ジョブ、生成物
+- [AI開発](ai_development.md) - AI が担当する開発タスクと承認フロー内の利用箇所
+- [更新ログ](log.md) - Wiki 更新履歴

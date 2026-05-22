@@ -1,0 +1,117 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main # デプロイのトリガーにするブランチ名
+
+# GitHub Pagesへのデプロイに必要な権限を設定
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 実行中のジョブがある場合は古いジョブをキャンセルする設定
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '26'
+          cache: 'pnpm'
+          cache-dependency-path: testpage/pnpm-lock.yaml
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: api/lambda
+          cache-on-failure: true
+
+      - name: Generate API documentation
+        working-directory: api/lambda
+        run: cargo doc --no-deps
+
+      - name: Copy documentation to _output
+        run: |
+          mkdir -p _output/raw/api
+          cp -r api/lambda/target/doc/* _output/raw/api/
+
+      - name: Install testpage dependencies
+        working-directory: testpage
+        run: pnpm i --frozen-lockfile
+
+      - name: Install TypeDoc
+        working-directory: testpage
+        run: pnpm install --save-dev typedoc
+
+      - name: Generate testpage documentation
+        working-directory: testpage
+        run: pnpm exec typedoc --out ../_output/raw/testpage --entryPointStrategy expand app components
+
+      - name: Build Storybook
+        working-directory: testpage
+        run: pnpm run build-storybook
+
+      - name: Copy Storybook to _output
+        run: |
+          mkdir -p _output/raw/storybook
+          cp -r testpage/storybook-static/* _output/raw/storybook/
+
+      - name: Generate wiki pages
+        working-directory: docs
+        run: |
+          echo '- <a href="https://nishidemasami.github.io/nishidemasami.github.io-contactform/raw/api/api_handler/index.html" target="_blank">バックエンドAPI ドキュメント（Rustdoc）</a>' >> README.md
+          echo '- <a href="https://nishidemasami.github.io/nishidemasami.github.io-contactform/raw/storybook/" target="_blank">テストページ ドキュメント（Storybook）</a>' >> README.md
+          echo '- <a href="https://nishidemasami.github.io/nishidemasami.github.io-contactform/raw/testpage/" target="_blank">テストページ ドキュメント（TypeDoc）</a>' >> README.md
+          mkdir -p _book
+          chmod -R 777 _book
+          docker run --rm -v .:/honkit ghcr.io/nishidemasami/markdown-docs:v1.2.2 npx honkit build
+
+      - name: Copy documentation to _output
+        run: |
+          cp -r docs/_book/* _output/
+
+      - name: Generate 404 page
+        run: |
+          [ -f _output/404.html ] || cp _static/404.html _output/404.html
+
+      - name: add .nojekyll
+        run: touch ./_output/.nojekyll
+
+      # ビルドされた成果物をArtifactとしてアップロード
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          # デプロイ対象のディレクトリを指定（例: 'dist', 'build', '.' など）
+          path: '_output' 
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      # UploadされたArtifactからGitHub Pagesへデプロイ
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
