@@ -17,7 +17,8 @@
       }
     },
     "styles": {
-      "website": "styles/website.css"
+      "website": "styles/website.css",
+      "pdf": "styles/website.css"
     },
     "uml": {
       "charset" : "UTF-8"

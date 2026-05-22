@@ -1,5 +1,5 @@
 .markdown-section svg * {
-    font-size: small !important;
+    font-size: revert-layer !important;
 }
 svg:not(:root) {
     width: stretch !important;
