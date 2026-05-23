@@ -11,6 +11,8 @@
 - [データベース](db.md)
 - [CI/CD](cicd.md)
 - [AI開発](ai_development.md)
+  - [タスクリスト (MoSCoW)](TASKS.md)
+  - [WBS (アジャイル向け)](WBS.md)
 - [更新ログ](log.md)
 
 ## 現在の構成
