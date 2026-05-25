@@ -1,0 +1,7 @@
+{
+	"dependencies": {
+		"honkit": "^6.2.0",
+		"gitbook-plugin-uml": "^2.0.0",
+		"gitbook-plugin-mermaid-gb3": "^2.1.0"
+	}
+}
